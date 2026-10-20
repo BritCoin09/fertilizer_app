@@ -64,16 +64,29 @@ api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password").st
 # -----------------------------
 # Chatbot (simple RAG-style)
 # -----------------------------
-st.sidebar.markdown("---")
-st.sidebar.subheader("🤖 Fertilizer Assistant")
-
-chat_query = st.sidebar.text_input("Ask a question:")
-
-# We’ll initialize client only if key is provided
-client = None
 if api_key:
-    os.environ["OPENAI_API_KEY"] = api_key
-    client = OpenAI()
+    try:
+        client = OpenAI(api_key=api_key.strip())
+    except Exception as e:
+        st.error("Your API key could not be initialized. Double‑check it.")
+        client = None
+else:
+    client = None
+
+if client and chat_query:
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": chat_query}],
+            temperature=0
+        )
+        st.sidebar.write(resp.choices[0].message.content.strip())
+    except Exception as e:
+        st.sidebar.error("Authentication failed. Your API key is invalid or missing.")
+else:
+    if chat_query:
+        st.sidebar.info("Enter your OpenAI API key to enable the assistant.")
+
 
 # -----------------------------
 # Load data (cached)
