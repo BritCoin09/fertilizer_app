@@ -1,159 +1,98 @@
 import streamlit as st
-import faiss
-import numpy as np
 import openai
-import glob
-import os
 
-# -----------------------------------
-# 🌿 OpenAI API Key
-# -----------------------------------
-openai.api_key = ("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")
+openai.api_key = "YOUR_KEY_HERE"
 
-# -----------------------------------
-# 🌿 Page Config
-# -----------------------------------
 st.set_page_config(
-    page_title="Fertilizer Intelligence Assistant",
+    page_title="Sustainable Fertilizer Optimization",
     page_icon="🌱",
     layout="wide"
 )
 
-# -----------------------------------
-# 🌾 Sidebar
-# -----------------------------------
-st.sidebar.markdown("""
-# 🌱 Fertilizer Intelligence Assistant
-Ask questions about:
-- Nutrients (N, P, K)
-- Soil health
-- Crop responses
-- Fertilizer strategies
-- Your transcripts + notes
-""")
+# Layout: left = template, right = chatbot
+col_template, col_chat = st.columns([2, 1])
 
-query = st.sidebar.text_input("Ask a question:")
+with col_template:
+    st.title("🌍 Sustainable Fertilizer Optimization Template")
 
-# -----------------------------------
-# 📦 Load Documents
-# -----------------------------------
-@st.cache_data
-def load_documents():
-    docs = []
-    for path in glob.glob("text/*.txt*"):
-        with open(path, "r", encoding="utf-8") as f:
-            docs.append({"path": path, "text": f.read()})
-    for path in glob.glob("transcripts/*.txt*"):
-        with open(path, "r", encoding="utf-8") as f:
-            docs.append({"path": path, "text": f.read()})
-    return docs
+    st.markdown("Fill this out while you chat with the assistant on the right.")
 
-documents = load_documents()
+    crop = st.text_input("Primary crop (e.g., Wheat)", "")
+    crop2 = st.text_input("Second crop (optional)", "")
 
-# -----------------------------------
-# ✂️ Chunking
-# -----------------------------------
-def chunk_text(text, chunk_size=2000, overlap=200):
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-    return chunks
+    st.subheader("Problem & Impact")
+    problem_text = st.text_area(
+        "Describe the problem and environmental impact",
+        "This project analyzes how fertilizer affects crop yields..."
+    )
 
-chunks = []
-for d in documents:
-    for c in chunk_text(d["text"]):
-        chunks.append({"text": c, "source": d["path"]})
+    st.subheader("Chart Explanations")
+    fert_trend_expl = st.text_area(
+        "Global NPK Fertilizer Trends explanation",
+        ""
+    )
+    dist_expl = st.text_area(
+        "Distribution of Fertilizer Use explanation",
+        ""
+    )
+    top_n_expl = st.text_area(
+        "Top 10 Countries by Nitrogen Use explanation",
+        ""
+    )
+    global_fert_expl = st.text_area(
+        "Global Fertilizer Use Over Time explanation",
+        ""
+    )
 
-# -----------------------------------
-# 🧠 Live Embedding Retrieval (no FAISS)
-# -----------------------------------
-@st.cache_resource
-def embed_chunks():
-    texts = [c["text"] for c in chunks]
-    all_embeddings = []
-    batch_size = 50
+    st.subheader(f"{crop or '[Your Crop]'} Modeling Explanations")
+    model1_expl = st.text_area("Model 1 (Linear Regression) explanation", "")
+    model2_expl = st.text_area("Model 2 (Polynomial Regression) explanation", "")
+    model3_expl = st.text_area("Model 3 (Optimal Fertilizer Level) explanation", "")
+    crop_summary = st.text_area(f"{crop or '[Your Crop]'} model section summary", "")
 
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i+batch_size]
-        resp = openai.Embedding.create(
-            model="text-embedding-3-small",
-            input=batch
+    st.subheader(f"{crop2 or '[2nd Crop]'} Section")
+    crop2_yield_expl = st.text_area(f"{crop2 or '[2nd Crop]'} yield over time explanation", "")
+
+    st.subheader("Final Summary")
+    final_summary = st.text_area("Project summary / conclusions", "")
+
+    st.button("Save (placeholder)", help="You can later wire this to export or save.")
+
+with col_chat:
+    st.header("🌱 Fertilizer Intelligence Assistant")
+
+    st.markdown(
+        "Ask questions while you fill out the template—about crops, models, fertilizer, or wording."
+    )
+
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    user_q = st.text_input("Ask a question:")
+
+    if user_q:
+        st.session_state.chat_history.append(("user", user_q))
+
+        prompt = (
+            "You are a fertilizer optimization and data modeling assistant. "
+            "Help the user fill out a sustainable fertilizer optimization template. "
+            "Be clear, concise, and practical.\n\n"
+            f"User question: {user_q}"
         )
-        embs = [item["embedding"] for item in resp["data"]]
-        all_embeddings.extend(embs)
 
-    return np.array(all_embeddings).astype("float32")
+        resp = openai.ChatCompletion.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
 
-embs_np = embed_chunks()
+        answer = resp["choices"][0]["message"]["content"].strip()
+        st.session_state.chat_history.append(("assistant", answer))
 
-# -----------------------------------
-# 🔍 Retrieval
-# -----------------------------------
-def retrieve(query, k=5):
-    q_emb = openai.Embedding.create(
-        model="text-embedding-3-small",
-        input=[query]
-    )["data"][0]["embedding"]
+    for role, msg in st.session_state.chat_history:
+        if role == "user":
+            st.markdown(f"**You:** {msg}")
+        else:
+            st.markdown(f"**Assistant:** {msg}")
 
-    q_emb = np.array(q_emb).astype("float32")
-
-    # cosine similarity
-    sims = np.dot(embs_np, q_emb) / (
-        np.linalg.norm(embs_np, axis=1) * np.linalg.norm(q_emb)
-    )
-
-    top_k = sims.argsort()[-k:][::-1]
-    return [chunks[i] for i in top_k]
-
-
-# -----------------------------------
-# 💬 Answer (old OpenAI syntax)
-# -----------------------------------
-def answer_question(q):
-    retrieved = retrieve(q)
-    context = "\n\n---\n\n".join(
-        [f"Source: {d['source']}\n\n{d['text']}" for d in retrieved]
-    )
-
-    prompt = (
-        "Use the following context to answer the question. "
-        "If the context is partially relevant, infer the best answer. "
-        "If unrelated, say you don't know.\n\n"
-        f"Context:\n{context}\n\nQuestion: {q}\n\nAnswer concisely:"
-    )
-
-    resp = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0
-    )
-
-    return resp["choices"][0]["message"]["content"].strip(), retrieved
-
-# -----------------------------------
-# 🌻 Main Page
-# -----------------------------------
-st.title("🌿 Fertilizer Intelligence Dashboard")
-
-st.markdown("""
-Welcome to your **Fertilizer Intelligence Assistant** — a retrieval‑augmented system built from your notes, transcripts, and fertilizer research.
-
-Use the sidebar to ask questions anytime.
-""")
-
-# -----------------------------------
-# 🌾 Answer Display
-# -----------------------------------
-if query:
-    st.subheader("🌱 Answer")
-    answer, retrieved_chunks = answer_question(query)
-    st.write(answer)
-
-    st.subheader("📄 Retrieved Context")
-    for c in retrieved_chunks:
-        with st.expander(c["source"]):
-            st.write(c["text"])
 
