@@ -67,30 +67,25 @@ for d in documents:
     for c in chunk_text(d["text"]):
         chunks.append({"text": c, "source": d["path"]})
 
+# 🧠 Load FAISS index + embeddings
 # -----------------------------------
-# 🧠 Embeddings + FAISS (old OpenAI syntax)
-# -----------------------------------
+import pickle
+
 @st.cache_resource
-def build_faiss_index():
-    texts = [c["text"] for c in chunks]
-    all_embeddings = []
-    batch_size = 50
+def load_faiss_index():
+    # Load embeddings
+    with open("vectorstore/fertilizer_index/index.pkl", "rb") as f:
+        embeddings = pickle.load(f)
 
-    for i in range(0, len(texts), batch_size):
-        batch = texts[i:i+batch_size]
-        resp = openai.Embedding.create(
-            model="text-embedding-3-small",
-            input=batch
-        )
-        embs = [item["embedding"] for item in resp["data"]]
-        all_embeddings.extend(embs)
+    embs_np = np.array(embeddings).astype("float32")
 
-    embs_np = np.array(all_embeddings).astype("float32")
-    index = faiss.IndexFlatL2(embs_np.shape[1])
-    index.add(embs_np)
-    return index
+    # Load FAISS index
+    index = faiss.read_index("vectorstore/fertilizer_index/index.faiss")
 
-index = build_faiss_index()
+    return index, embs_np
+
+index, embs_np = load_faiss_index()
+
 
 # -----------------------------------
 # 🔍 Retrieval
