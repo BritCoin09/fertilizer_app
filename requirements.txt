@@ -1,6 +1,10 @@
-streamlit
-openai
-faiss-cpu
-numpy
+matplotlib
+seaborn
 pandas
-python-dotenv
+numpy
+scikit-learn
+kagglehub
+faiss-cpu
+openai
+streamlit
+
