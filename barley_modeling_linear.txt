@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers barley modeling setup and the first regression model.
+
+Here is Section 4 for the barley analysis. Here I chose a darker color for barley. OK, I use the same three models as wheat, so here is the linear regression. This shows that as fertilizer increases barley yield by about 113 kilograms per hectare. R2 is about 0.328, which has similar limitations as wheat.

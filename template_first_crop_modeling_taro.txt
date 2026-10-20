@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers the first crop’s polynomial regression and yield behavior.
+
+First crop model two polynomial regression… taro yield over time… rises… global taro yield versus fertilizer use… linear regression… polynomial regression… optimal fertilizer level for maximum taro yield… predicted yield is about 9,500 at about 17 kg per HA.

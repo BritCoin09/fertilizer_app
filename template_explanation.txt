@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains how the template works and how users can customize it.
+
+I also want to add that I did make a whole template for this project where I deleted all of my explanations and you can fill in your own explanations because you are going to fill in instead of wheat and barley, you get to pick your two crops that you want to use. And I put a little code block so you can see every crop that you can use in the dataset. And it's so easy because you can make this into your own project. If you want to pick 2 crops and make this whole thing your project with your explanations, but literally all you have to do is delete the word wheat and barley and fill it in with one of the available crops that you're going to choose from. And this whole project will fill out by itself…

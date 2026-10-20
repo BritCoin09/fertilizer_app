@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains your motivation for turning your original project into a reusable template.
+
+my very first on my own data science project and towards the end I kind of didn't want to let this project go to waste. So, I was like, maybe I'll make a template out of it. So, I stripped um I cuz I in first I used wheat and barley

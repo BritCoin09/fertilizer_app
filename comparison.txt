@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk compares the two crops’ efficiency and peak yields.
+
+And then I wanted to compare the two crops. So here it shows that wheat peaks earlier and achieves a higher max yield, barley peaks later and slightly lower, and wheat is more fertilizer efficient overall.

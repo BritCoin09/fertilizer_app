@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers the fertilizer usage section and why you cleared outputs.
+
+So, this is just fertilizer usage top 10 countries by nitrogen use. I I did clear the outputs because I want to show you how it runs from top to bottom… all you have to do is put two crops in and then this whole project will run top to bottom.

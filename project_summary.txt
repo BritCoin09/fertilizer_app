@@ -1,0 +1,3 @@
+Anchor: This chunk covers the project summary, impact, and the imports used.
+
+Project summary in case you don't want to look through the whole project. With an impact which I just talked about. Here's my imports that I used.

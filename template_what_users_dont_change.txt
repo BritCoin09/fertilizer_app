@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains which sections of the notebook are pre‑built and require no edits.
+
+Yeah, all of this first stuff you do not have to change. Um the libraries are imported. If you want to go through and read the data and EDA… all of this is just done. This isn't the part that you need to fill out unless it's the markdowns that say your crops here.

@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers the second crop’s regression models and unusual behavior.
+
+spinach… global spinach yield versus fertilizer use… doesn't look like there's too much fertilizer used, but not a lot of yield either… you can explain what the heck is going on because I don't know… soil damage or weather… polynomial regression model… all over the place…

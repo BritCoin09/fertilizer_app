@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains how the notebook resets and executes top‑to‑bottom.
+
+I'm going to restart session and run everything… everything's wiped clean and it starts from top to bottom… this is the executing time of each cell… everything's running pretty good.

@@ -1,0 +1,38 @@
+🌱 DOMAIN NOTES (for Fertilizer RAG)
+Nutrients Overview  
+Nitrogen (N), Phosphorus (P), and Potassium (K) are the three primary macronutrients required for healthy plant growth. They are often referred to as NPK. Each nutrient plays a different role in plant development.
+
+Nitrogen (N)  
+Nitrogen is responsible for leaf growth, chlorophyll production, and overall plant vigor. It drives photosynthesis and helps plants produce proteins. Too little nitrogen causes yellowing leaves and stunted growth. Too much nitrogen causes excessive leafy growth with weak roots and reduced fruit or grain production.
+
+Phosphorus (P)  
+Phosphorus supports root development, flowering, fruiting, and energy transfer within the plant. It is essential for early growth and strong root systems. Low phosphorus leads to poor root structure, delayed maturity, and reduced yield.
+
+Potassium (K)  
+Potassium regulates water movement, disease resistance, and stress tolerance. It strengthens stems, improves drought resistance, and enhances overall plant health. Low potassium causes weak stems, poor stress tolerance, and lower crop quality.
+
+Environmental Impact of Fertilizer Use  
+Over‑application of fertilizer can lead to nutrient runoff, water pollution, algal blooms, and long‑term soil degradation. Under‑application can reduce crop yield and soil fertility. The goal is to optimize fertilizer use to maximize yield while minimizing environmental harm.
+
+Why Fertilizer Optimization Matters  
+Optimizing NPK levels helps farmers reduce costs, improve yield, protect soil health, and prevent environmental damage. It supports sustainable agriculture and long‑term food security.
+
+FAOSTAT Data Context  
+FAOSTAT provides agricultural production, fertilizer use, and environmental impact data across countries and years. This dataset helps identify trends, relationships, and optimal nutrient levels for crop yield.
+
+Modeling Notes  
+Crop yield is influenced by nutrient levels, weather, soil conditions, and farming practices. Polynomial regression can capture non‑linear relationships between NPK levels and yield. Feature engineering and proper scaling improve model performance.
+
+Interpretation Notes  
+When analyzing fertilizer data, look for:
+
+diminishing returns (too much fertilizer reduces yield)
+
+nutrient imbalance (one nutrient too high or too low)
+
+environmental tradeoffs
+
+optimal ranges rather than single values
+
+Project Purpose  
+This project aims to identify the optimal fertilizer levels for sustainable crop production and provide insights that support environmentally responsible agriculture.

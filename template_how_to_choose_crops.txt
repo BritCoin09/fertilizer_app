@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains how users select crop1 and crop2.
+
+Okay, so now we're at the part where you choose your crop… all you have to do to see the list of crops that are available to use, just uncomment it… I'm going to randomly choose taro… your second crop here… let's pick spinach…

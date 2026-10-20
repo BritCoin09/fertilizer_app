@@ -1,0 +1,1242 @@
+# 🌾Sustainable Fertilizer Optimization🌱
+
+### Project Summary
+This project analyzes how fertilizer affects wheat and barley yields to find the optimal application point (the level that delivers strong crop performance without wasting money or causing nutrient pollution). Using linear and polynomial models, I identify where fertilizer provides meaningful returns and where diminishing returns begin. The goal is to support farmers in using fertilizer efficiently while protecting soil, water, and the environment.
+
+## 🌍 Problem & Impact
+
+Fertilizer is one of the most powerful tools in agriculture. It boosts crop growth, increases food production, and supports global food security.
+
+But too much fertilizer becomes pollution, wastes money, and harms soil and water systems. The challenge is finding the point where fertilizer is helpful, not harmful.
+
+This project asks one core question:
+
+♻️ **What fertilizer level delivers strong yields without crossing into pollution‑causing excess?** ♻️
+
+Using global wheat and barley data, the analysis measures how yield responds to fertilizer, identifies where diminishing returns begin, and pinpoints the “sweet spot” where productivity stays high and environmental risk stays low. This simple one‑input, one‑output approach creates a clear baseline for understanding fertilizer efficiency and sets the stage for future work that includes soil, weather, and environmental indicators.
+
+One input. One output. One environmentally responsible optimum.
+
+## Section 1 📦 Imports
+
+# Core libraries
+import pandas as pd
+import numpy as np
+import os
+
+# Visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Modeling
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
+
+# Settings
+plt.rcParams["figure.figsize"] = (10, 6)
+sns.set_style("ticks")
+
+# Kaggle access (if needed)
+import kagglehub
+
+## Section 2 📊 Data & EDA
+
+This project uses two global, annual datasets:
+
+- Fertilizer use (kg/ha)
+
+- Crop yield (kg/ha) for wheat and barley
+
+The fertilizer dataset provides global fertilizer application per year, while the yield dataset provides crop‑specific yields. Merging them by year creates two aligned dataframes (one for wheat and one for barley), each combining global fertilizer use with crop‑specific yield.
+
+**Exploratory Analysis**
+
+The EDA examines:
+
+- long‑term fertilizer use trends
+
+- yield trends for wheat and barley
+
+- the relationship between fertilizer and yield
+
+- where diminishing returns begin as fertilizer increases
+
+This analysis builds the foundation for the regression and polynomial models that follow, helping identify the fertilizer levels that maximize yield without unnecessary environmental impact.
+
+### Load Fertilizer Dataset
+
+path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
+
+fert = pd.read_csv(
+    os.path.join(path, "Environment_Fertilizers_E_All_Data_(Normalized)", "Environment_Fertilizers_E_All_Data_(Normalized).csv"),
+    encoding="latin1"
+)
+
+This dataset contains global fertilizer application data from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with crop yield information in later steps.
+
+### Filter Fertilizer Data
+
+Using the “Use per area of cropland” element keeps fertilizer values consistent with yield units.
+
+fert_crop = fert[fert["Element"] == "Use per area of cropland"]
+fert_crop.head()
+
+### Prepare NPK Fertilizer Data
+
+This step filters the fertilizer dataset to the three primary nutrients: Nitrogen (N), Phosphorus (P₂O₅), and Potassium (K₂O). It standardizes their labels, removes missing values, and excludes FAO aggregate regions to keep only real countries.
+
+fert_npk = fert_crop[
+    fert_crop["Item"].isin([
+        "Nutrient nitrogen N (total)",
+        "Nutrient phosphate P2O5 (total)",
+        "Nutrient potash K2O (total)"
+    ])
+]
+
+fert_npk["Nutrient"] = fert_npk["Item"].map({
+    "Nutrient nitrogen N (total)": "Nitrogen (N)",
+    "Nutrient phosphate P2O5 (total)": "Phosphorus (P₂O₅)",
+    "Nutrient potash K2O (total)": "Potassium (K₂O)"
+})
+
+fert_npk = fert_npk.dropna(subset=["Value"])
+aggregates = [
+    "World",
+    "Western Europe",
+    "Western Asia",
+    "Eastern Africa",
+    "Least Developed Countries",
+    "Low Income Food Deficit Countries",
+    "Northern America",
+    "Europe",
+    "Africa",
+    "Asia",
+    "Oceania"
+]
+
+fert_npk_clean = fert_npk[~fert_npk["Area"].isin(aggregates)]
+fert_npk_clean["Area"].nunique()
+
+### Global NPK Fertilizer Trends
+
+fig, ax = plt.subplots(figsize=(12, 6))
+
+sns.lineplot(
+    data=fert_npk_clean,
+    x="Year",
+    y="Value",
+    hue="Nutrient",
+    palette={
+    "Nitrogen (N)": "#2E7D32",
+    "Phosphorus (P₂O₅)": "#8D6E63",
+    "Potassium (K₂O)": "#F9A825"
+},
+    ax=ax
+)
+
+ax.grid(
+    True,
+    which="both",
+    axis="both",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+fig.patch.set_facecolor("#F2F2F0")
+ax.set_facecolor("#FAFAF7")
+
+leg = plt.legend()
+leg.get_frame().set_facecolor("#FAFAF7")
+leg.get_frame().set_edgecolor("#D9D9D6")
+
+plt.ylabel("Nutrient Application Rate (kg/ha)")
+plt.title("Global NPK Fertilizer Use Over Time (kg/ha)", fontweight="bold")
+plt.show()
+
+
+This chart shows that global fertilizer use has become increasingly nitrogen‑heavy over the past 60 years. Nitrogen application rises sharply, while phosphorus and potassium remain relatively stable. This imbalance highlights long‑term concerns for soil health, environmental impact, and sustainable nutrient management.
+
+### Distribution of Fertilizer Use by Nutrient (kg/ha)
+
+This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
+
+
+fig = plt.figure(figsize=(10, 6))
+fig.patch.set_facecolor("#F2F2F0")
+
+ax = plt.gca()
+ax.set_facecolor("#FAFAF7")
+
+sns.boxplot(
+    data=fert_npk_clean,
+    x="Nutrient",
+    y="Value",
+    hue="Nutrient",
+      palette={
+    "Nitrogen (N)": "#2E7D32",
+    "Phosphorus (P₂O₅)": "#8D6E63",
+    "Potassium (K₂O)": "#F9A825"
+},
+    legend=False,
+    ax=ax
+)
+
+ax.grid(
+    True,
+    which="both",
+    axis="y",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+ax.set_axisbelow(True)
+
+plt.xlabel("Nutrient Type")
+plt.ylabel("Fertilizer Use (kg/ha)")
+plt.title("Distribution of NPK Fertilizer Use (kg/ha)", fontweight="bold")
+
+plt.show()
+
+This boxplot shows fertilizer use across all countries and years. Most values are low, which keeps the boxes small, but because the dataset is large, even a small number of high‑use country‑years creates many outlier points. Nitrogen has the widest spread and the highest extremes, while phosphorus and potassium stay lower and more consistent.
+
+### Top 10 Countries by Nitrogen Use (kg/ha)
+
+top_n = (
+    fert_npk_clean[fert_npk_clean["Nutrient"] == "Nitrogen (N)"]
+    .groupby("Area")["Value"]
+    .mean()
+    .sort_values(ascending=False)
+    .head(10)
+)
+
+top_n_df = top_n.reset_index()
+
+sns.set_style("ticks")
+
+fig, ax = plt.subplots(figsize=(12, 6))
+
+fig.patch.set_facecolor("#DDEEE3")
+
+ax.set_facecolor("white")
+
+sns.barplot(
+    data=top_n_df,
+    x="Value",
+    y="Area",
+    color='#2E7D32',
+    ax=ax
+)
+
+ax.grid(
+    True,
+    which="both",
+    axis="x",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+ax.set_axisbelow(True)
+
+for i, v in enumerate(top_n_df["Value"]):
+    ax.text(v + 5, i, f"{v:.0f}", va="center")
+
+plt.title("Top 10 Countries by Nitrogen Use (kg/ha)", fontweight="bold")
+plt.xlabel("Nitrogen Use (kg/ha)")
+plt.ylabel("Country")
+
+plt.xticks(range(0, int(top_n_df["Value"].max()) + 50, 50))
+plt.tight_layout()
+plt.show()
+
+The Netherlands appears at the top of the ranking due to its extremely intensive agricultural system. Despite its small land area, it is one of the world’s largest agricultural exporters, relying on high‑yield greenhouse production, dense livestock operations, and nutrient‑intensive farming practices. These factors drive nitrogen application far above global averages.
+
+### Global Fertilizer Use Over Time (kg/ha)
+
+df_fert = fert.groupby("Year")["Value"].mean().reset_index()
+plt.figure(figsize=(10,5))
+plt.gcf().patch.set_facecolor("#DDEEE3")
+
+plt.plot(
+    df_fert["Year"],
+    df_fert["Value"],
+    color="#4A7C59",
+    linewidth=2.8,
+    marker="o"
+)
+
+plt.title("Global Fertilizer Use Over Time", fontweight='bold')
+plt.xlabel("Year")
+plt.ylabel("Fertilizer Use (kg/ha)")
+plt.grid(True)
+plt.show()
+
+
+This line chart shows the long‑term rise in global fertilizer application rates. Fertilizer use has increased steadily over the past several decades as global food production expanded, driven by population growth, intensification of agriculture, and the adoption of high‑yield farming practices. This upward trend provides important context for understanding modern nutrient demand and environmental pressures.
+
+###📜 Historical Context: Why Global Fertilizer Use Dropped (1990–2010)
+
+Global fertilizer use does not move randomly, it responds to major geopolitical, economic, and agricultural shifts. The decline from 1990 to 2010 aligns with several real‑world events that disrupted fertilizer production, trade, and demand across multiple continents.
+
+**1. Collapse of the Soviet Union (1991)**
+
+The Soviet Union was one of the world’s largest fertilizer producers and consumers. When it dissolved:
+
+- fertilizer factories shut down
+
+- subsidies disappeared
+
+- millions of hectares of farmland were abandoned
+
+- agricultural output collapsed across Russia, Ukraine, Kazakhstan, and Eastern Europe
+
+This event alone caused a massive global drop in fertilizer use starting in the early 1990s.
+
+**2. Early 1990s Global Recession**
+
+Economic downturns reduced farm incomes worldwide.
+Farmers cut back on inputs, including nitrogen, phosphorus, and potassium fertilizers.
+
+**3. Agricultural Restructuring in the 1990s**
+
+During this decade:
+
+- many countries shifted toward lower‑input farming
+
+- environmental regulations tightened
+
+- fertilizer efficiency improved
+
+- some regions intentionally reduced nitrogen use
+
+These structural changes slowed fertilizer demand even as economies recovered.
+
+**4. Asian Financial Crisis (1997–1998)**
+
+Major agricultural economies (including Indonesia, Thailand, Malaysia, and South Korea) experienced severe economic contraction.Fertilizer imports dropped sharply, contributing to the global decline.
+
+**5. Global Financial Crisis (2008–2010)**
+
+This is the sharp dip visible in the graph around 2008–2010.
+
+- fertilizer prices spiked
+
+- credit tightened
+
+- farmers delayed or reduced fertilizer purchases
+
+- global demand fell rapidly
+
+This created the steepest short‑term decline in the entire dataset.
+
+**6. Post‑2010 Recovery**
+
+As global markets stabilized:
+
+- fertilizer production increased
+
+- agricultural investment grew
+
+- demand rebounded
+
+This explains the upward trend after 2010.
+
+### Load Crop Yield Dataset
+
+crop_yield = kagglehub.dataset_download(
+    "vijayveersingh/faostat-crops-and-livestock-data"
+)
+
+This dataset provides global crop yield information from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with fertilizer application data in the next steps. This forms the foundation for the crop‑specific modeling and analysis that follows.
+
+### Load Raw Crop Yield Data
+
+df_yield = pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
+df_yield.head()
+
+I load the full FAOSTAT crop and livestock dataset here so I can filter it down to crop yields only and prepare it for cleaning, merging, and analysis in the next steps.
+
+### Reshape and Filter Crop Yield Data
+
+df_long = df_yield.melt(
+    id_vars=[
+        "Area Code", "Area Code (M49)", "Area",
+        "Item Code", "Item Code (CPC)", "Item",
+        "Element Code", "Element", "Unit"
+    ],
+    var_name="Year",
+    value_name="Value"
+)
+
+# Convert 'Y1961' → 1961
+df_long["Year"] = df_long["Year"].str.replace("Y", "").astype(int)
+
+### 🌾 Wheat and 🌱 Barley Only
+
+crop_yield_only = df_long[
+    (df_long["Element"] == "Yield") &
+    (df_long["Item"].isin(["Wheat", "Barley"]))
+]
+
+global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
+
+df_long.columns
+
+
+I reshape the FAOSTAT dataset from wide to long format so each row represents a single crop–year observation.
+After converting the year column, I filter the dataset to include only yield values for Wheat and Barley, which are the two crops analyzed in this project.
+This subset is then aggregated by year to prepare for visualization and modeling in later steps.
+
+## Section 3 🌾 Wheat Modeling
+
+In this section, I build three models to understand how fertilizer application influences wheat yield. I begin with a simple linear regression to establish the baseline relationship between fertilizer use and yield. I then extend the model using polynomial features to capture curvature in the yield response. Finally, I identify the fertilizer level that maximizes predicted yield, providing a practical recommendation for optimal nutrient application.
+
+### 🌾 Prepare Wheat Dataset for Regression
+
+To prepare the wheat modeling dataset, I merge global wheat yield data with global fertilizer application data. This creates a single dataframe where each row represents a year, the corresponding wheat yield, and the fertilizer applied that year. This merged dataset serves as the foundation for all three wheat models that follow.
+
+wheat = crop_yield_only[crop_yield_only["Item"] == "Wheat"]
+
+global_wheat = wheat.groupby("Year")["Value"].mean().reset_index()
+global_wheat["Crop"] = "Wheat"
+
+global_fert = fert.groupby("Year")["Value"].mean().reset_index()
+
+df_wheat = pd.merge(
+    global_wheat,
+    global_fert,
+    on="Year",
+    how="inner",
+    suffixes=("_yield", "_fert")
+)
+
+df_wheat.head()
+
+
+
+### 🌾 Visualize Wheat Yield Over Time
+
+plt.figure(figsize=(10,5))
+plt.plot(df_wheat["Year"], df_wheat["Value_yield"], color="#B58A4A", linewidth=2.5)
+plt.gcf().patch.set_facecolor("#EDE7D4")
+plt.title("Global Wheat Yield Over Time", fontweight="bold")
+plt.xlabel("Year")
+plt.ylabel("Yield (kg/ha)")
+plt.grid(True)
+plt.show()
+
+This plot shows how global wheat yield has changed over time. The long‑term upward trend suggests that productivity has steadily improved across decades, supporting the idea that fertilizer use may be one of several contributing factors.
+
+### 🌾 Visualize Fertilizer vs Wheat Yield
+
+plt.figure(figsize=(10,6))
+
+# Outer background (sage)
+plt.gcf().patch.set_facecolor("#DDEEE3")
+
+# Inner background (white)
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Scatter points (Wheat color)
+plt.scatter(
+    df_wheat["Value_fert"],
+    df_wheat["Value_yield"],
+    color="#B58A4A",
+    alpha=0.85,
+    s=85,
+    edgecolor="black",
+    linewidth=0.5,
+    label="Wheat Data Points"
+)
+
+# Define x, m, and b for the trendline from the linear model (Model 1)
+x = np.linspace(df_wheat["Value_fert"].min(), df_wheat["Value_fert"].max(), 100)
+m, b = np.polyfit(df_wheat["Value_fert"], df_wheat["Value_yield"], 1)
+
+
+plt.plot(
+    x,
+    m*x + b,
+    color="#7C6A4A",
+    linewidth=2.2,
+    alpha=0.8,
+    label="Trendline"
+)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+
+# Soft sage spines
+for spine in ax.spines.values():
+    spine.set_color("#A8C3B0")
+    spine.set_linewidth(1.2)
+
+# Annotation
+plt.text(
+    10.5, 3300,                     # moved left + slightly down
+    "Higher fertilizer use\n→ higher wheat yield",
+    fontsize=10,
+    color="#4A7C59",
+    weight="bold"
+)
+
+
+# Title + labels
+plt.title("Global Wheat Yield vs Fertilizer Use", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Yield (kg/ha)")
+
+# Soft grid
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+This scatter plot shows a clear positive relationship between fertilizer use and global wheat yield. As fertilizer application increases, wheat yields generally rise as well. The trendline reinforces this upward pattern, indicating that fertilizer is an important driver of productivity.
+
+However, the spread of the points also shows that fertilizer is not the only factor influencing yield. Weather, soil quality, crop genetics, and farming practices all contribute to the variation seen in the data.
+
+Overall, the plot suggests that higher fertilizer use tends to support higher wheat yields, but real‑world agricultural outcomes depend on multiple interacting conditions.
+
+### 🌾 Correlation Between Fertilizer Use and Wheat Yield
+
+df_wheat[["Value_fert", "Value_yield"]].corr()
+
+
+As global fertilizer use increases, global wheat yield tends to increase too, but not perfectly. Weather, technology, irrigation, and genetics also matter.
+
+### Wheat Model 1 🌾 Linear Regression
+
+Linear regression establishes the baseline relationship between fertilizer use and wheat yield. This model fits a straight line to the data to measure how much yield increases for each additional kilogram of fertilizer applied. It provides the simplest possible view of the fertilizer–yield relationship and serves as the foundation for comparing more advanced models.
+
+X = df_wheat[["Value_fert"]]
+y = df_wheat["Value_yield"]
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Metrics
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+r2 = r2_score(y_test, y_pred)
+
+print("Model 1: Linear Regression")
+print("--------------------------")
+print(f"Coefficient (slope): {model.coef_[0]:.2f}")
+print(f"Intercept: {model.intercept_:.2f}")
+print(f"RMSE: {rmse:.2f}")
+print(f"R² Score: {r2:.3f}")
+
+# Plot: Actual vs Predicted
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(y_test, y_pred, color="#B58A4A", edgecolor="black", s=85)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()],
+         color="#7C6A4A", linewidth=2.2)
+
+plt.title("Model 1: Actual vs Predicted Wheat Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+
+plt.tight_layout()
+plt.show()
+
+
+Model 1 uses fertilizer use as the single predictor of global wheat yield. The model finds that each additional kilogram of fertilizer per hectare is associated with an average increase of 128.6 kg/ha in wheat yield. This confirms that fertilizer is a meaningful driver of productivity.
+
+The model explains 33.9% of the variation in yield (R² = 0.339), which is reasonable given that global wheat production is influenced by many other factors such as weather, soil quality, crop genetics, and farming practices. The RMSE of 527.6 kg/ha indicates moderate prediction error, which is expected for a simple one‑feature model.
+
+Overall, Model 1 provides a solid baseline and demonstrates that fertilizer use has a clear positive relationship with wheat yield, but additional features or more advanced modeling may be needed to improve predictive accuracy.
+
+### Wheat Model 2 🌾 Polynomial Regression
+
+Polynomial regression allows the model to capture curvature in the fertilizer–yield relationship. In real agronomy, yield does not increase linearly forever. Instead, crops experience diminishing returns, where each additional unit of fertilizer contributes less to yield than the previous one.
+
+To model this behavior, I introduce a second‑degree polynomial term. This enables the model to fit a curved response and better reflect real‑world fertilizer efficiency patterns.
+
+
+# Features and target
+X = df_wheat[["Value_fert"]]
+y = df_wheat["Value_yield"]
+
+# Polynomial transformation
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X_poly, y, test_size=0.2, random_state=42
+)
+
+# Model
+model2 = LinearRegression()
+model2.fit(X_train, y_train)
+
+# Predictions
+y_pred2 = model2.predict(X_test)
+
+# Metrics
+rmse2 = np.sqrt(mean_squared_error(y_test, y_pred2))
+r2_2 = r2_score(y_test, y_pred2)
+
+print("Model 2: Polynomial Regression (Degree 2)")
+print("-----------------------------------------")
+print(f"Coefficients: {model2.coef_}")
+print(f"Intercept: {model2.intercept_:.2f}")
+print(f"RMSE: {rmse2:.2f}")
+print(f"R² Score: {r2_2:.3f}")
+
+# Plot: Actual vs Predicted
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(y_test, y_pred2, color="#B58A4A", edgecolor="black", s=85)
+plt.plot([y_test.min(), y_test.max()],
+         [y_test.min(), y_test.max()],
+         color="#7C6A4A", linewidth=2.2)
+
+plt.title("Model 2: Actual vs Predicted Wheat Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+Model 2 introduces a polynomial regression to capture the curved relationship between fertilizer use and wheat yield.
+
+The model identifies:
+
+- a positive linear term (≈ 715.27), meaning yield increases as fertilizer increases
+
+- a negative quadratic term (≈ –19.28), indicating diminishing returns at higher fertilizer levels
+
+This pattern aligns with agronomic reality: fertilizer boosts yield up to a point, but excessive application becomes less effective.
+
+Compared to Model 1, Model 2 shows a slight improvement:
+
+- R²: 0.339 → 0.348
+
+- RMSE: 527.63 → 523.84
+
+While the improvement is modest, it suggests that a curved model fits the data better than a straight line and provides a more realistic representation of fertilizer efficiency.
+
+### Wheat Model 3 🌾 Optimal Fertilizer Level
+
+To turn the curved relationship from Model 2 into a practical recommendation, Model 3 identifies the exact fertilizer level where predicted wheat yield reaches its maximum before diminishing returns begin. This step translates the polynomial curve into a real‑world decision point: the fertilizer “sweet spot” that maximizes yield without unnecessary input use.
+
+
+# Smooth range of fertilizer values for plotting the polynomial curve
+x_range = np.linspace(
+    df_wheat["Value_fert"].min(),
+    df_wheat["Value_fert"].max(),
+    200
+)
+
+
+# Extract coefficients
+a = model2.coef_[1]   # quadratic term
+b = model2.coef_[0]   # linear term
+x_opt = -b / (2 * a)
+
+# Compute optimal fertilizer level
+x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
+x_opt_poly = poly.transform(x_opt_df)
+y_opt = model2.predict(x_opt_poly)[0]
+
+print("Model 3: Optimal Fertilizer Level")
+print("----------------------------------")
+print("Optimal Fertilizer (kg/ha):", round(x_opt, 2))
+print("Predicted Yield at Optimum (kg/ha):", round(y_opt, 2))
+
+
+# Generate smooth curve for plotting
+x_range_df = pd.DataFrame({"Value_fert": x_range})
+X_curve = poly.transform(x_range_df)
+y_curve = model2.predict(X_curve)
+
+# Plot
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Curve
+plt.plot(x_range, y_curve, color="#7C6A4A", linewidth=2.5, label="Polynomial Curve")
+
+# Data points
+plt.scatter(df_wheat["Value_fert"], df_wheat["Value_yield"],
+            color="#B58A4A", edgecolor="black", s=85, alpha=0.8, label="Data Points")
+
+# Optimal point
+plt.scatter(x_opt, y_opt, color="#4A7C59", s=120, edgecolor="black", zorder=5, label=f"Optimal Point ({x_opt:.1f} kg/ha)")
+
+plt.title("Model 3: Optimal Fertilizer Level for Maximum Wheat Yield", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+
+plt.tight_layout()
+plt.show()
+
+
+### Wheat Model 3 🌾 Interpretation: Optimal Fertilizer Level
+
+Model 3 identifies the fertilizer rate that maximizes predicted wheat yield using the curvature of the polynomial regression model. Because the quadratic term in Model 2 is negative, the curve has a clear peak — meaning yield increases up to a point and then begins to level off. This reflects the real agronomic principle of diminishing returns.
+
+The model estimates that the optimal fertilizer level is 18.55 kg/ha, producing a maximum predicted yield of 2569.3 kg/ha. Below this level, each additional kilogram of fertilizer contributes meaningfully to yield. Beyond this point, however, the curve flattens, indicating that extra fertilizer provides little to no additional benefit.
+
+This result is important because it translates the regression curve into a practical recommendation. Instead of simply showing that fertilizer affects yield, Model 3 pinpoints the exact application rate where farmers achieve the strongest returns without drifting into wasteful or inefficient use. It also reinforces the sustainability message: applying more fertilizer than necessary not only fails to improve yield but can also increase environmental and economic costs.
+
+Overall, Model 3 completes the story by turning statistical patterns into a clear, actionable insight — the fertilizer “sweet spot” that balances productivity with responsible resource use.
+
+### Wheat Modeling 🌾 Conclusion
+
+Across the three wheat models, a clear pattern emerges: fertilizer use is strongly linked to yield, but the relationship is not unlimited.
+
+🌾 **Model 1** established a positive linear trend, showing that fertilizer is a meaningful driver of wheat productivity.
+
+🌾 **Model 2** improved on this by capturing the curved, diminishing‑returns pattern that better reflects real agronomic behavior.
+
+🌾 **Model 3** translated the curve into a practical insight. Identifying an optimal fertilizer rate of 18.55 kg/ha, where predicted yield reaches its maximum before leveling off.
+
+Together, these models show that fertilizer boosts wheat yield up to a point, but excessive application provides little additional benefit and may even reduce efficiency. This insight supports more sustainable fertilizer management by highlighting the “sweet spot” where productivity and resource use are balanced.
+
+With the wheat analysis complete, the next step is to apply the same modeling framework to barley, allowing for a direct comparison between the two crops and a broader understanding of fertilizer efficiency across different grain systems.
+
+## Section 4 🌱 Barley Analysis
+
+### 🌱 Prepare Barley Dataset for Modeling
+
+This dataset merges global barley yield with global fertilizer use by year.
+It mirrors the wheat workflow so both crops can be compared consistently.
+
+barley = crop_yield_only[crop_yield_only["Item"] == "Barley"]
+
+global_barley = barley.groupby("Year")["Value"].mean().reset_index()
+global_barley["Crop"] = "Barley"
+
+df_barley = pd.merge(
+    global_barley,
+    global_fert,
+    on="Year",
+    how="inner",
+    suffixes=("_yield", "_fert")
+)
+
+df_barley.head()
+
+
+### 🌱 Barley Yield Over Time
+
+This plot shows how global barley yield has changed across decades.
+Like wheat, barley shows a long‑term upward trend driven by improvements in fertilizer use, crop genetics, and farming practices.
+
+plt.figure(figsize=(10,5))
+plt.plot(df_barley["Year"], df_barley["Value_yield"], color="#d5b37e", linewidth=2.5)
+plt.gcf().patch.set_facecolor("#D5B37E")
+plt.title("Global Barley Yield Over Time", fontweight="bold")
+plt.xlabel("Year")
+plt.ylabel("Yield (kg/ha)")
+plt.grid(True)
+plt.show()
+
+
+
+###  Barley Model 1 🌱 Linear Regression
+This model establishes the baseline relationship between fertilizer use and barley yield.
+It measures how much yield increases for each additional kilogram of fertilizer applied.
+
+# Features and target
+X_b = df_barley[["Value_fert"]]
+y_b = df_barley["Value_yield"]
+
+# Train-test split
+Xb_train, Xb_test, yb_train, yb_test = train_test_split(
+    X_b, y_b, test_size=0.2, random_state=42
+)
+
+# Model
+model_b1 = LinearRegression()
+model_b1.fit(Xb_train, yb_train)
+
+# Predictions
+yb_pred = model_b1.predict(Xb_test)
+
+# Metrics
+rmse_b1 = np.sqrt(mean_squared_error(yb_test, yb_pred))
+r2_b1 = r2_score(yb_test, yb_pred)
+
+print("Barley Model 1: Linear Regression")
+print("---------------------------------")
+print(f"Coefficient (slope): {model_b1.coef_[0]:.2f}")
+print(f"Intercept: {model_b1.intercept_:.2f}")
+print(f"RMSE: {rmse_b1:.2f}")
+print(f"R² Score: {r2_b1:.3f}")
+
+
+### Barley Model 1 🌱 Actual vs Predicted
+This chart compares the model’s predictions to real yield values.
+It shows how well a simple linear model captures the fertilizer–yield relationship.
+
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#D5B37E")   # barley outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(yb_test, yb_pred, color="#d5b37e", edgecolor="black", s=85)
+plt.plot([yb_test.min(), yb_test.max()],
+         [yb_test.min(), yb_test.max()],
+         color="#a68a5b", linewidth=2.2)
+
+plt.title("Barley Model 1 (Linear): Actual vs Predicted Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+### Barley Model 1 🌱 Interpretation:
+ This linear model estimates how much barley yield increases for each additional kilogram of fertilizer applied. The R² score shows how much of the variation in barley yield is explained by fertilizer alone. Like wheat, barley yield is influenced by weather, soil quality, and crop genetics, so a single‑feature model provides a useful baseline but cannot capture the full complexity of real‑world production.
+
+### 🌱 Barley Yield vs Fertilizer Use
+
+This scatter plot visualizes the relationship between fertilizer application and barley yield.
+The trendline shows that yield generally increases as fertilizer use rises.
+
+
+plt.figure(figsize=(10,6))
+
+# Outer background (sage)
+plt.gcf().patch.set_facecolor("#DDEEE3")
+
+# Inner background (white)
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Scatter points (Barley color)
+plt.scatter(
+    df_barley["Value_fert"],
+    df_barley["Value_yield"],
+    color="#d5b37e",
+    alpha=0.85,
+    s=85,
+    edgecolor="black",
+    linewidth=0.5,
+    label="Barley Data Points"
+)
+
+# Define x, m, and b for the trendline from the linear model (Model 1 for barley)
+x = np.linspace(df_barley["Value_fert"].min(), df_barley["Value_fert"].max(), 100)
+m = model_b1.coef_[0]
+b = model_b1.intercept_
+
+
+plt.plot(
+    x,
+    m*x + b,
+    color="#a68a5b",
+    linewidth=2.2,
+    alpha=0.8,
+    label="Trendline"
+)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+# Soft sage spines
+for spine in ax.spines.values():
+    spine.set_color("#A8C3B0")
+    spine.set_linewidth(1.2)
+
+# Annotation
+plt.text(
+    df_barley["Value_fert"].min() + 2,
+    df_barley["Value_yield"].max() - 200,
+    "Higher fertilizer use\n→ higher barley yield",
+    fontsize=10,
+    color="#4A7C59",
+    weight="bold"
+)
+
+# Title + labels
+plt.title("Global Barley Yield vs Fertilizer Use", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Yield (kg/ha)")
+
+# Soft grid
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+### Barley Model 2 🌱 Polynomial Regression
+
+Polynomial regression captures the curved, diminishing‑returns pattern in barley yield.
+This model better reflects real agronomic behavior than a straight line.
+
+
+# Features and target
+X_b = df_barley[["Value_fert"]]
+y_b = df_barley["Value_yield"]
+
+# Polynomial transformation
+poly_b = PolynomialFeatures(degree=2, include_bias=False)
+Xb_poly = poly_b.fit_transform(X_b)
+
+# Train-test split
+Xb_train, Xb_test, yb_train, yb_test = train_test_split(
+    Xb_poly, y_b, test_size=0.2, random_state=42
+)
+
+# Model
+model_b2 = LinearRegression()
+model_b2.fit(Xb_train, yb_train)
+
+# Predictions
+yb_pred2 = model_b2.predict(Xb_test)
+
+# Metrics
+rmse_b2 = np.sqrt(mean_squared_error(yb_test, yb_pred2))
+r2_b2 = r2_score(yb_test, yb_pred2)
+
+print("Barley Model 2: Polynomial Regression (Degree 2)")
+print("------------------------------------------------")
+print(f"Coefficients: {model_b2.coef_}")
+print(f"Intercept: {model_b2.intercept_:.2f}")
+print(f"RMSE: {rmse_b2:.2f}")
+print(f"R² Score: {r2_b2:.3f}")
+
+
+###  Barley Model 2 🌱 Actual vs Predicted
+
+This plot evaluates how well the polynomial model predicts barley yield.
+It shows improved fit compared to the linear model.
+
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#D5B37E")   # barley outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(yb_test, yb_pred2, color="#d5b37e", edgecolor="black", s=85)
+plt.plot([yb_test.min(), yb_test.max()],
+         [yb_test.min(), yb_test.max()],
+         color="#a68a5b", linewidth=2.2)
+
+plt.title("Barley Model 2 (Polynomial): Actual vs Predicted Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+###  Barley Model 3 🌱 Optimal Fertilizer Level
+
+This chart shows the polynomial curve, the real data points, and the exact optimal fertilizer level for barley.
+
+# Smooth range of fertilizer values for plotting the polynomial curve
+x_range_b = np.linspace(
+    df_barley["Value_fert"].min(),
+    df_barley["Value_fert"].max(),
+    200
+)
+
+# Extract coefficients
+a_b = model_b2.coef_[1]   # quadratic term
+b_b = model_b2.coef_[0]   # linear term
+
+# Compute optimal fertilizer level (vertex of parabola)
+x_opt_b = -b_b / (2 * a_b)
+
+# Predicted yield at the optimum
+x_opt_df_b = pd.DataFrame({"Value_fert": [x_opt_b]})
+x_opt_poly_b = poly_b.transform(x_opt_df_b)
+y_opt_b = model_b2.predict(x_opt_poly_b)[0]
+
+print("Barley Model 3: Optimal Fertilizer Level")
+print("-----------------------------------------")
+print("Optimal Fertilizer (kg/ha):", round(x_opt_b, 2))
+print("Predicted Yield at Optimum (kg/ha):", round(y_opt_b, 2))
+
+# Generate smooth curve for plotting
+x_range_df_b = pd.DataFrame({"Value_fert": x_range_b})
+X_curve_b = poly_b.transform(x_range_df_b)
+y_curve_b = model_b2.predict(X_curve_b)
+
+# Plot
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Curve
+plt.plot(x_range_b, y_curve_b, color="#a68a5b", linewidth=2.5, label="Polynomial Curve")
+
+# Data points
+plt.scatter(df_barley["Value_fert"], df_barley["Value_yield"],
+            color="#d5b37e", edgecolor="black", s=85, alpha=0.8, label="Data Points")
+
+# Optimal point
+plt.scatter(x_opt_b, y_opt_b, color="#4A7C59", s=120, edgecolor="black", zorder=5,
+            label=f"Optimal Point ({x_opt_b:.1f} kg/ha)")
+
+plt.title("Barley Model 3: Optimal Fertilizer Level for Maximum Yield", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+### Barley Model 3 🌱 Interpretation:
+
+Using the curvature from the polynomial regression, Model 3 identifies the fertilizer rate where barley yield reaches its maximum before diminishing returns begin. Below this point, fertilizer contributes meaningfully to yield; above it, gains flatten out and become inefficient. This optimal point represents the most productive and environmentally responsible fertilizer level for barley.
+
+### 🌱 Barley Summary Section
+
+Barley shows a clear but moderate response to fertilizer, with yield generally increasing as fertilizer use rises.
+
+🌱Model 1 (Linear Regression): Fertilizer increases barley yield by ~113 kg/ha, but with an R² of 0.328, it’s clear fertilizer isn’t the only factor. Weather, soil, and genetics also matter.
+
+🌱 Model 2 (Polynomial Regression): The polynomial model fits slightly better (R² = 0.336) and shows the expected diminishing returns: yield rises, then slows as fertilizer levels increase.
+
+🌱 Model 3: Barley’s “sweet spot” is 20.14 kg/ha, producing a max predicted yield of 2425.14 kg/ha. Below this, fertilizer helps; above it, gains flatten and efficiency drops.
+
+Together, these models show that barley requires slightly more fertilizer than wheat to reach its peak yield and achieves a slightly lower maximum output. This insight supports more efficient fertilizer planning and highlights the importance of balancing productivity with sustainability.
+
+### 🌾 Wheat vs 🌱 Barley: Fertilizer Response Comparison
+Wheat and barley both show positive yield responses to fertilizer, but the strength and efficiency of that response differ between the two crops. Wheat reaches its maximum predicted yield at an optimal fertilizer level of 18.55 kg/ha, producing a peak yield of 2569.3 kg/ha. Barley, on the other hand, requires slightly more fertilizer (20.14 kg/ha) yet achieves a lower maximum predicted yield of 2425.14 kg/ha.
+
+These differences highlight that wheat is more fertilizer‑efficient, gaining more yield per unit of fertilizer and reaching its plateau earlier. Barley still benefits from fertilizer, but its diminishing returns begin slightly later and its overall yield potential is lower. Both crops follow the expected agronomic pattern: strong gains at low fertilizer levels, slowing gains near the optimum, and minimal benefit beyond the peak.
+
+Together, these results support more precise fertilizer planning. Wheat growers should avoid exceeding ~19 kg/ha, while barley growers should target around ~20 kg/ha for maximum efficiency. Applying more than these levels leads to unnecessary cost and environmental impact without meaningful yield improvement.
+
+# Smooth fertilizer range across both datasets
+x_range = np.linspace(
+    min(df_wheat["Value_fert"].min(), df_barley["Value_fert"].min()),
+    max(df_wheat["Value_fert"].max(), df_barley["Value_fert"].max()),
+    200
+)
+
+# ---- Wheat curve ----
+x_range_df_w = pd.DataFrame({"Value_fert": x_range})
+X_curve_w = poly.transform(x_range_df_w)
+y_curve_w = model2.predict(X_curve_w)
+
+# Wheat optimal point
+coef_w1 = model2.coef_[0]
+coef_w2 = model2.coef_[1]
+x_opt_w = -coef_w1 / (2 * coef_w2)
+x_opt_df_w = pd.DataFrame({"Value_fert": [x_opt_w]})
+y_opt_w = model2.predict(poly.transform(x_opt_df_w))[0]
+
+# ---- Barley curve ----
+x_range_df_b = pd.DataFrame({"Value_fert": x_range})
+X_curve_b = poly_b.transform(x_range_df_b)
+y_curve_b = model_b2.predict(X_curve_b)
+
+# Barley optimal point
+coef_b1 = model_b2.coef_[0]
+coef_b2 = model_b2.coef_[1]
+x_opt_b = -coef_b1 / (2 * coef_b2)
+x_opt_df_b = pd.DataFrame({"Value_fert": [x_opt_b]})
+y_opt_b = model_b2.predict(poly_b.transform(x_opt_df_b))[0]
+
+# ---- Plot ----
+plt.figure(figsize=(12,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Wheat curve
+plt.plot(x_range, y_curve_w, color="#B58A4A", linewidth=2.5, label="Wheat Curve")
+plt.scatter(x_opt_w, y_opt_w, color="#8C6E3C", s=120, edgecolor="black", zorder=5,
+            label=f"Wheat Optimum ({x_opt_w:.1f} kg/ha)")
+
+# Barley curve
+plt.plot(x_range, y_curve_b, color="#d5b37e", linewidth=2.5, label="Barley Curve")
+plt.scatter(x_opt_b, y_opt_b, color="#b89a6a", s=120, edgecolor="black", zorder=5,
+            label=f"Barley Optimum ({x_opt_b:.1f} kg/ha)")
+
+
+plt.title("Wheat vs Barley: Fertilizer–Yield Response Curves", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+plt.legend(frameon=True, facecolor="white", edgecolor="#A8C3B0")
+
+plt.tight_layout()
+plt.show()
+
+### ❓ Questions This Project Answers
+**1. How does fertilizer use influence global wheat and barley yields?**
+
+The regression models quantify how yield changes as fertilizer application increases.
+
+**2. Where do diminishing returns begin for each crop?**
+
+The polynomial models reveal the point where additional fertilizer produces smaller and smaller yield gains.
+
+**3. What is the optimal fertilizer level that maximizes yield?**
+
+Model 3 identifies the fertilizer “sweet spot” for both wheat and barley, or, the rate that maximizes predicted yield before efficiency drops.
+
+**4. Do wheat and barley respond differently to fertilizer?**
+
+The combined comparison shows that each crop has its own curve, efficiency pattern, and optimal application rate.
+
+**5. How has global fertilizer use changed over time?**
+
+The EDA highlights long‑term trends, including increases, declines, and major global events that shaped fertilizer demand.
+
+**6. Which nutrients (N, P, K) are used most intensively worldwide?**
+
+The NPK analysis shows global nutrient imbalance, with nitrogen dominating fertilizer use.
+
+**7. How do countries differ in fertilizer intensity?**
+
+The Top 10 nitrogen chart identifies the highest‑use countries and highlights extreme outliers.
+
+**8. What historical events explain major shifts in fertilizer use?**
+
+The contextual analysis connects real‑world geopolitical and economic events to changes in global fertilizer application.
+
+**9. How well can fertilizer alone predict yield?**
+
+Model performance metrics (R², RMSE) show the strengths and limits of single‑feature modeling.
+
+**10. What does a sustainable fertilizer strategy look like?**
+
+The optimal‑point analysis demonstrates how to balance productivity with environmental responsibility.
+
+### 🔮 Future Work
+**1. Add More Agronomic Features**
+
+Incorporate additional variables such as soil type, rainfall, temperature, irrigation, and crop genetics to build a more complete predictive model.
+
+**2.Explore Nutrient‑Specific Modeling (N, P, K)**
+
+Instead of using total fertilizer, model how each nutrient individually affects yield and whether certain crops respond more strongly to specific nutrients.
+
+**3. Regional or Country‑Level Analysis**
+
+Break the global dataset into regions to understand how fertilizer efficiency varies across climates, farming systems, and economic conditions.
+
+**4. Time‑Lag Effects**
+
+Investigate whether fertilizer use in one year influences yield in subsequent years, especially for crops grown in rotation.
+
+**5. Environmental Impact Modeling**
+
+Extend the project to estimate potential nutrient runoff, greenhouse gas emissions, or soil nutrient depletion associated with different fertilizer levels.
+
+**6. Compare More Crops**
+
+Expand the analysis to include maize, rice, soybeans, or potatoes to build a broader understanding of fertilizer efficiency across global agriculture.
+
+**7. Build an Interactive Dashboard**
+
+Create a dashboard that allows users to explore fertilizer trends, yield curves, and optimal points dynamically.
+
+**8. Machine Learning Extensions**
+
+Experiment with more advanced models (Random Forest, Gradient Boosting, XGBoost) to capture nonlinear patterns beyond polynomial regression.
+
+# 🌾 Final Project Conclusion 🌱
+
+This project set out with a simple but important goal:
+
+**understand how fertilizer influences crop yield, identify where returns begin to level off, and pinpoint the application rate that maximizes productivity without drifting into waste or environmental harm.**
+
+By modeling global wheat and barley data using linear and polynomial regression, a clear pattern emerged across both crops.
+
+Fertilizer is undeniably effective. Yields rise as application increases, but the relationship is not limitless.
+
+Both wheat and barley show the same agronomic truth:
+
+**after a certain point, each additional kilogram of fertilizer contributes less and less to yield.**
+
+The polynomial models captured this curvature, and the optimal‑point analysis translated it into practical guidance. For each crop, the model identified a fertilizer “sweet spot” where yield is maximized before diminishing returns take over.
+
+This matters because the difference between “enough” and “too much” fertilizer is more than an economic decision. Excess fertilizer contributes to nutrient runoff, water pollution, and long‑term soil imbalance. By identifying the point where yield peaks, this project highlights how farmers and policymakers can support both productivity and environmental responsibility at the same time.
+
+Comparing wheat and barley also showed that different crops respond differently to the same fertilizer levels, reinforcing the need for crop‑specific nutrient strategies rather than one‑size‑fits‑all recommendations. Together, the models demonstrate how even a simple one‑input, one‑output approach can reveal meaningful insights about fertilizer efficiency and sustainability.
+
+This project forms a strong baseline for future work. Incorporating soil data, weather patterns, nutrient ratios, or region‑specific conditions, but even at this stage, the takeaway is clear:
+
+**smarter fertilizer use isn’t just possible, it’s measurable.**
+
+Finding the balance between yield and environmental impact is both a data problem and a sustainability opportunity 🌱🌾💚

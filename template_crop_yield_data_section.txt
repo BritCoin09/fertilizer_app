@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains the crop yield dataset and its purpose.
+
+This is just for the fertilizer and everything in the data set… oh no this for the crops… crop yield data… whole running notebook talking about optimal fertilizer use to crop yield predictions…

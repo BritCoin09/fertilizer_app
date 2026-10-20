@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains diminishing returns and the optimal fertilizer point for wheat.
+
+Wheat model 2. Polynomial regression. And that's going to capture diminishing returns. Basically, yield rises, then slows. It's a slightly better fit and more realistic agronomic behavior. Then we have wheat model 3 optimal fertilizer level. And this uses the polynomial curve to find the yield peak. So the optimal fertilizer for wheat is about 18.55 kilograms per hectare. The maximum predicted yield is about 2569 kilograms per hectare, and beyond this point, extra fertilizer provides little benefit.

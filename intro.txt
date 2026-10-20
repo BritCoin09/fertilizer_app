@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains Britny’s background, motivation, and why she chose fertilizer optimization as her first independent project.
+
+Hi everybody, My name is Britny Chambers and as a recent data science graduate from Triple 10, I decided to take on my own project. Something I care deeply about is saving the environment and people, um. So I decided to start making projects to attract the right companies and see if they would like to hire me. I am. I decided to do this first project on my own. It is fertilizer optimization and crop yield. So basically this is going to explain where the optimal fertilizer point is to where you will get the highest crop yield but you won't have the excess fertilizer causing runoff and pollution. So that was the whole point of this project and I hope you enjoyed me talking about it

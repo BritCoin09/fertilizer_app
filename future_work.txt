@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains how the project can be expanded.
+
+Future work on this can basically be expanded off of this project into a more diverse project which adds more like soil and weather.

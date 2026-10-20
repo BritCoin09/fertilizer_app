@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains how crop yield data was reshaped and filtered.
+
+So here I loaded my crop yield dataset. And here I reshaped the crop yield data to filter to wheat and barley only.

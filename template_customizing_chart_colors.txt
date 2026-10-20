@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains how users can change visualization colors.
+
+for each chart, I left the colors up to you… scatter color… line color… background color… uncomment it… done… fertilizer and nutrients colors stay the same.

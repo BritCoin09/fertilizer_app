@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk explains how the template auto‑fills charts and comparisons.
+
+All the charts will fill out. So you can just quickly check what the optimal fertilizer point is. You can check the use and see what crop you know the fertilizer use or optimal fertilizer level from maximum whatever yield you're picking. It's really awesome. I've tried it with a few different crops already and every one runs top to bottom. All you have to do is put in one or two crops that you want to use and the whole project fills out. It'll even replace the word wheat with whatever crop you pick. And for the barley cards it will also delete the word barley and put your other crop and then it'll compare the two at the bottom.

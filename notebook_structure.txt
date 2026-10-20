@@ -1,0 +1,4 @@
+
+Anchor: This chunk describes how the notebook is organized, color‑coded, and prepared before running.
+
+…on my sustainable fertilizer optimization project, I organized a notebook with clear sections and a consistent color system for wheat, barley and fertilizer and before I walk through it I am going to restart my session and run all cells. That means it's going to wipe everything clean and run it top to bottom to show you that it does run top to bottom.

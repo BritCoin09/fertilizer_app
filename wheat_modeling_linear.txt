@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers wheat modeling setup, color choices, and the first regression model.
+
+And we move on to Section 3, which is wheat modeling. Once again, I googled the colors to see what the best ones were to use. So that's going to be the wheat colors. And this was fertilizer and wheat, so I used the sage background that I used for the fertilizer charts and the wheat data points. OK so my wheat Model 1 linear regression. And this just establishes a baseline relationship between fertilizer and wheat yield. As you can see, each kilogram per hectare of fertilizer increases yield by about 128 kilograms per hectare, and the R2 being about 0.339 means fertilizer matters, but other factors also influence yield.

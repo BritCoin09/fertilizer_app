@@ -1,0 +1,4 @@
+
+Anchor: This chunk explains diminishing returns and the optimal fertilizer point for barley.
+
+This is barley model 2, the polynomial regression. This shows the same diminishing returns pattern with a slight improvement with fit. Barley model 3 optimal fertilizer level. As you can see, the optimal fertilizer level for barley is about 20.14 kg per hectare. The maximum predicted yield is about 2425 kilograms per hectare and basically barley needs slightly more fertilizer but reaches a lower peak.

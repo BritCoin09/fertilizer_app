@@ -1,0 +1,6 @@
+
+
+
+Anchor: This chunk covers nitrogen, phosphorus, potassium preparation and trend analysis.
+
+I prepare the NPK fertilizer data. Nitrogen, phosphorus, and potassium are the three most globally used nutrients for fertilizer. And I wanted to look at their trends. As you can see, nitrogen rises sharply over time, phosphorus and potassium stay stable. And I do want to point out that any chart that I make, I research the best colors to use, so that will always be a staple of my charts.

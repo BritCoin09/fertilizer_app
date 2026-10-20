@@ -1,0 +1,5 @@
+
+
+Anchor: This chunk explains the datasets used, cleaning, merging, and unit consistency.
+
+My data in EDA I did use two global datasets, fertilizer and crop yield and I got them over in the Data Explorer and they're both FAO stat. I did clean, reshape and merge by year so fertilizer aligns with wheat and barley yields, which I'll do later. I filter the fertilizer data to use per area of cropland for consistent units.
