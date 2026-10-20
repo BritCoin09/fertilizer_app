@@ -59,10 +59,7 @@ crop2 = st.sidebar.text_input(
 st.sidebar.markdown("---")
 
 st.sidebar.subheader("🔑 OpenAI API Key")
-api_key = st.sidebar.text_input(
-    "Enter your OpenAI API key",
-    type="password"
-)
+api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password").strip()
 
 # -----------------------------
 # Chatbot (simple RAG-style)
