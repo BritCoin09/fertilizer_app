@@ -67,25 +67,27 @@ for d in documents:
     for c in chunk_text(d["text"]):
         chunks.append({"text": c, "source": d["path"]})
 
-# 🧠 Load FAISS index + embeddings
 # -----------------------------------
-import pickle
-
+# 🧠 Live Embedding Retrieval (no FAISS)
+# -----------------------------------
 @st.cache_resource
-def load_faiss_index():
-    # Load embeddings
-    with open("vectorstore/fertilizer_index/index.pkl", "rb") as f:
-        embeddings = pickle.load(f)
+def embed_chunks():
+    texts = [c["text"] for c in chunks]
+    all_embeddings = []
+    batch_size = 50
 
-    embs_np = np.array(embeddings).astype("float32")
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i+batch_size]
+        resp = openai.Embedding.create(
+            model="text-embedding-3-small",
+            input=batch
+        )
+        embs = [item["embedding"] for item in resp["data"]]
+        all_embeddings.extend(embs)
 
-    # Load FAISS index
-    index = faiss.read_index("vectorstore/fertilizer_index/index.faiss")
+    return np.array(all_embeddings).astype("float32")
 
-    return index, embs_np
-
-index, embs_np = load_faiss_index()
-
+embs_np = embed_chunks()
 
 # -----------------------------------
 # 🔍 Retrieval
@@ -96,9 +98,16 @@ def retrieve(query, k=5):
         input=[query]
     )["data"][0]["embedding"]
 
-    q_emb = np.array(q_emb).astype("float32").reshape(1, -1)
-    D, I = index.search(q_emb, k)
-    return [chunks[idx] for idx in I[0]]
+    q_emb = np.array(q_emb).astype("float32")
+
+    # cosine similarity
+    sims = np.dot(embs_np, q_emb) / (
+        np.linalg.norm(embs_np, axis=1) * np.linalg.norm(q_emb)
+    )
+
+    top_k = sims.argsort()[-k:][::-1]
+    return [chunks[i] for i in top_k]
+
 
 # -----------------------------------
 # 💬 Answer (old OpenAI syntax)
