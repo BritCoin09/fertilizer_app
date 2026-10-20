@@ -1,198 +1,750 @@
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import streamlit as st
-import openai
-import textwrap
 
-openai.api_key = "YOUR_KEY_HERE"
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
+
+import kagglehub
+import faiss
+from openai import OpenAI
+
+# -----------------------------
+# Global styling
+# -----------------------------
+plt.rcParams["figure.figsize"] = (10, 6)
+sns.set_style("ticks")
 
 st.set_page_config(
     page_title="Sustainable Fertilizer Optimization",
-    page_icon="🌱",
     layout="wide"
 )
 
 # -----------------------------
-# 🌿 Layout
+# Sidebar: navigation + inputs
 # -----------------------------
-col_template, col_chat = st.columns([2, 1])
+st.sidebar.title("🌱 Navigation")
+
+step = st.sidebar.radio(
+    "Go to section:",
+    [
+        "1. Project Overview",
+        "2. Data & EDA",
+        "3. Crop Modeling (Main Crop)",
+        "4. Optimal Fertilizer Level",
+        "5. Second Crop Analysis",
+        "6. Summary"
+    ]
+)
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("✏️ Crop Selection")
+
+crop = st.sidebar.text_input(
+    "Main crop name (exact FAOSTAT label)",
+    value="Wheat"
+)
+
+crop2 = st.sidebar.text_input(
+    "Second crop name (optional)",
+    value="Maize"
+)
+
+st.sidebar.markdown("---")
+
+st.sidebar.subheader("🔑 OpenAI API Key")
+api_key = st.sidebar.text_input(
+    "Enter your OpenAI API key",
+    type="password"
+)
 
 # -----------------------------
-# 🌱 LEFT: Multi-step template
+# Chatbot (simple RAG-style)
 # -----------------------------
-with col_template:
-    st.title("🌍 Sustainable Fertilizer Optimization")
+st.sidebar.markdown("---")
+st.sidebar.subheader("🤖 Fertilizer Assistant")
 
-    st.markdown(
-        "Fill out the key fields below. Crop names and sections auto-update across the template."
+chat_query = st.sidebar.text_input("Ask a question:")
+
+# We’ll initialize client only if key is provided
+client = None
+if api_key:
+    os.environ["OPENAI_API_KEY"] = api_key
+    client = OpenAI()
+
+# -----------------------------
+# Load data (cached)
+# -----------------------------
+@st.cache_data
+def load_fertilizer_data():
+    path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
+    fert = pd.read_csv(
+        os.path.join(
+            path,
+            "Environment_Fertilizers_E_All_Data_(Normalized)",
+            "Environment_Fertilizers_E_All_Data_(Normalized).csv"
+        ),
+        encoding="latin1"
+    )
+    return fert
+
+@st.cache_data
+def load_crop_yield_data():
+    crop_yield = kagglehub.dataset_download(
+        "vijayveersingh/faostat-crops-and-livestock-data"
+    )
+    df_yield = pd.read_csv(
+        crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv"
+    )
+    return df_yield
+
+fert = load_fertilizer_data()
+df_yield = load_crop_yield_data()
+
+# -----------------------------
+# Prepare fertilizer data
+# -----------------------------
+fert_crop = fert[fert["Element"] == "Use per area of cropland"]
+
+fert_npk = fert_crop[
+    fert_crop["Item"].isin([
+        "Nutrient nitrogen N (total)",
+        "Nutrient phosphate P2O5 (total)",
+        "Nutrient potash K2O (total)"
+    ])
+]
+
+fert_npk["Nutrient"] = fert_npk["Item"].map({
+    "Nutrient nitrogen N (total)": "Nitrogen (N)",
+    "Nutrient phosphate P2O5 (total)": "Phosphorus (P₂O₅)",
+    "Nutrient potash K2O (total)": "Potassium (K₂O)"
+})
+
+fert_npk = fert_npk.dropna(subset=["Value"])
+aggregates = [
+    "World",
+    "Western Europe",
+    "Western Asia",
+    "Eastern Africa",
+    "Least Developed Countries",
+    "Low Income Food Deficit Countries",
+    "Northern America",
+    "Europe",
+    "Africa",
+    "Asia",
+    "Oceania"
+]
+fert_npk_clean = fert_npk[~fert_npk["Area"].isin(aggregates)]
+
+df_fert_global = fert.groupby("Year")["Value"].mean().reset_index()
+
+# -----------------------------
+# Prepare crop yield data
+# -----------------------------
+df_long = df_yield.melt(
+    id_vars=[
+        "Area Code", "Area Code (M49)", "Area",
+        "Item Code", "Item Code (CPC)", "Item",
+        "Element Code", "Element", "Unit"
+    ],
+    var_name="Year",
+    value_name="Value"
+)
+
+df_long["Year"] = df_long["Year"].str.replace("Y", "").astype(int)
+
+crop_yield_only = df_long[df_long["Element"] == "Yield"]
+
+global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
+
+# -----------------------------
+# Helper: build main crop dataset
+# -----------------------------
+def build_crop_df(crop_name: str):
+    selected_crop_df = crop_yield_only[crop_yield_only["Item"] == crop_name]
+    if selected_crop_df.empty:
+        return None
+
+    global_crop = (
+        selected_crop_df.groupby("Year")["Value"]
+        .mean()
+        .reset_index()
+    )
+    global_crop["Crop"] = crop_name
+
+    global_fert = fert.groupby("Year")["Value"].mean().reset_index()
+
+    df_crop = pd.merge(
+        global_crop,
+        global_fert,
+        on="Year",
+        how="inner",
+        suffixes=("_yield", "_fert")
+    )
+    return df_crop
+
+df_crop_main = build_crop_df(crop)
+df_crop_second = build_crop_df(crop2) if crop2 else None
+
+# -----------------------------
+# Section 1: Project Overview
+# -----------------------------
+if step == "1. Project Overview":
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.title("🌍 Sustainable Fertilizer Optimization")
+
+        st.markdown("""
+This project analyzes how fertilizer affects **crop yields** to find the optimal application point:
+the level that delivers strong crop performance **without wasting money or causing nutrient pollution**.
+
+Using linear and polynomial models, the analysis:
+
+- measures how yield responds to fertilizer
+- identifies where diminishing returns begin
+- pinpoints the “sweet spot” where productivity stays high and environmental risk stays low
+        """)
+
+        st.markdown(f"**Current main crop:** `{crop}`")
+        if crop2:
+            st.markdown(f"**Second crop:** `{crop2}`")
+
+    with col2:
+        st.markdown("### 🤖 Assistant")
+        st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
+
+        if client and chat_query:
+            with st.spinner("Thinking..."):
+                resp = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": chat_query}],
+                    temperature=0
+                )
+                st.markdown(resp.choices[0].message.content.strip())
+        elif chat_query and not client:
+            st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
+
+# -----------------------------
+# Section 2: Data & EDA
+# -----------------------------
+elif step == "2. Data & EDA":
+    st.header("📊 Data & Exploratory Analysis")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Global NPK Fertilizer Trends")
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.lineplot(
+            data=fert_npk_clean,
+            x="Year",
+            y="Value",
+            hue="Nutrient",
+            palette={
+                "Nitrogen (N)": "#2E7D32",
+                "Phosphorus (P₂O₅)": "#8D6E63",
+                "Potassium (K₂O)": "#F9A825"
+            },
+            ax=ax
+        )
+
+        ax.grid(True, which="both", axis="both",
+                color="#D9D9D6", linewidth=0.6, alpha=0.6)
+        fig.patch.set_facecolor("#F2F2F0")
+        ax.set_facecolor("#FAFAF7")
+
+        leg = plt.legend()
+        leg.get_frame().set_facecolor("#FAFAF7")
+        leg.get_frame().set_edgecolor("#D9D9D6")
+
+        plt.ylabel("Nutrient Application Rate (kg/ha)")
+        plt.title("Global NPK Fertilizer Use Over Time (kg/ha)", fontweight="bold")
+        st.pyplot(fig)
+
+        st.caption(
+            "Global fertilizer use has become increasingly nitrogen‑heavy over the past 60 years, "
+            "raising long‑term concerns for soil health and environmental impact."
+        )
+
+    with col2:
+        st.subheader("Distribution of NPK Fertilizer Use")
+
+        fig2 = plt.figure(figsize=(10, 6))
+        fig2.patch.set_facecolor("#F2F2F0")
+        ax2 = plt.gca()
+        ax2.set_facecolor("#FAFAF7")
+
+        sns.boxplot(
+            data=fert_npk_clean,
+            x="Nutrient",
+            y="Value",
+            hue="Nutrient",
+            palette={
+                "Nitrogen (N)": "#2E7D32",
+                "Phosphorus (P₂O₅)": "#8D6E63",
+                "Potassium (K₂O)": "#F9A825"
+            },
+            legend=False,
+            ax=ax2
+        )
+
+        ax2.grid(True, which="both", axis="y",
+                 color="#D9D9D6", linewidth=0.6, alpha=0.6)
+        ax2.set_axisbelow(True)
+
+        plt.xlabel("Nutrient Type")
+        plt.ylabel("Fertilizer Use (kg/ha)")
+        plt.title("Distribution of NPK Fertilizer Use (kg/ha)", fontweight="bold")
+
+        st.pyplot(fig2)
+
+        st.caption(
+            "Nitrogen shows the widest spread and highest outliers, reflecting large differences "
+            "in how intensively countries apply it."
+        )
+
+    st.markdown("---")
+
+    st.subheader("Global Fertilizer Use Over Time")
+
+    fig3 = plt.figure(figsize=(10, 5))
+    plt.gcf().patch.set_facecolor("#DDEEE3")
+
+    plt.plot(
+        df_fert_global["Year"],
+        df_fert_global["Value"],
+        color="#4A7C59",
+        linewidth=2.8,
+        marker="o"
     )
 
-    step = st.radio(
-        "Template step",
-        ["1️⃣ Project setup", "2️⃣ Crop modeling", "3️⃣ Second crop", "4️⃣ Summary & export"],
-        horizontal=True
+    plt.title("Global Fertilizer Use Over Time", fontweight='bold')
+    plt.xlabel("Year")
+    plt.ylabel("Fertilizer Use (kg/ha)")
+    plt.grid(True)
+
+    st.pyplot(fig3)
+
+    st.caption(
+        "Fertilizer use has increased steadily as global food production expanded, "
+        "with notable dips during major economic crises."
     )
 
-    # Shared core inputs
-    crop = st.text_input("Primary crop (replaces [YOUR CROP(S) HERE] / [Your Crop])", "")
-    crop2 = st.text_input("Second crop (replaces [2nd Crop])", "")
+# -----------------------------
+# Section 3: Crop Modeling (Main Crop)
+# -----------------------------
+elif step == "3. Crop Modeling (Main Crop)":
+    st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
 
-    # Defaults for display
-    crop_display = crop or "[Your Crop]"
-    crop_plural_display = crop or "[YOUR CROP(S) HERE]"
-    crop2_display = crop2 or "[2nd Crop]"
+    if df_crop_main is None:
+        st.error(f"Could not find crop `{crop}` in FAOSTAT yield data. Try another name.")
+    else:
+        col1, col2 = st.columns(2)
 
-    if step == "1️⃣ Project setup":
-        st.subheader("Project Summary")
-        st.markdown(
-            textwrap.dedent(
-                f"""
-                This project analyzes how fertilizer affects **{crop_plural_display}** yields to find the optimal application point (the level that delivers strong crop performance without wasting money or causing nutrient pollution).
+        with col1:
+            st.subheader(f"Global {crop} Yield Over Time")
 
-                Using linear and polynomial models, it identifies where fertilizer provides meaningful returns and where diminishing returns begin. The goal is to support farmers in using fertilizer efficiently while protecting soil, water, and the environment.
-                """
+            fig = plt.figure(figsize=(10, 5))
+            plt.plot(df_crop_main["Year"], df_crop_main["Value_yield"], linewidth=2.5)
+            plt.title(f"Global {crop} Yield Over Time", fontweight="bold")
+            plt.xlabel("Year")
+            plt.ylabel("Yield (kg/ha)")
+            plt.grid(True)
+
+            st.pyplot(fig)
+
+        with col2:
+            st.subheader(f"{crop} Yield vs Fertilizer Use")
+
+            fig2 = plt.figure(figsize=(10, 6))
+            plt.gcf().patch.set_facecolor("#DDEEE3")
+            ax = plt.gca()
+            ax.set_facecolor("white")
+
+            plt.scatter(
+                df_crop_main["Value_fert"],
+                df_crop_main["Value_yield"],
+                color="#B58A4A",
+                alpha=0.85,
+                s=85,
+                edgecolor="black",
+                linewidth=0.5,
+                label=f"{crop} Data Points"
             )
-        )
 
-        st.subheader("Problem & Impact")
-        st.markdown(
-            textwrap.dedent(
-                f"""
-                Fertilizer is one of the most powerful tools in agriculture. It boosts crop growth, increases food production, and supports global food security.
-
-                But too much fertilizer becomes pollution, wastes money, and harms soil and water systems. The challenge is finding the point where fertilizer is helpful, not harmful.
-
-                This project asks one core question:
-
-                ♻️ **What fertilizer level delivers strong yields for {crop_display} without crossing into pollution‑causing excess?** ♻️
-                """
+            x = np.linspace(
+                df_crop_main["Value_fert"].min(),
+                df_crop_main["Value_fert"].max(),
+                100
             )
-        )
-
-    elif step == "2️⃣ Crop modeling":
-        st.subheader(f"{crop_display} Modeling Overview")
-        st.markdown(
-            textwrap.dedent(
-                f"""
-                In this section, you model how fertilizer application influences **{crop_display}** yield using:
-
-                - Model 1: Linear Regression  
-                - Model 2: Polynomial Regression (Degree 2)  
-                - Model 3: Optimal Fertilizer Level
-
-                These models help identify the fertilizer “sweet spot” where yield is strong but environmental risk stays low.
-                """
+            m, b = np.polyfit(
+                df_crop_main["Value_fert"],
+                df_crop_main["Value_yield"],
+                1
             )
-        )
 
-        model1_expl = st.text_area(
-            "Model 1 (Linear Regression) explanation",
-            f"Linear regression establishes the baseline relationship between fertilizer use and {crop_display} yield..."
-        )
-        model2_expl = st.text_area(
-            "Model 2 (Polynomial Regression) explanation",
-            f"Polynomial regression allows the model to capture curvature in the fertilizer–yield relationship for {crop_display}..."
-        )
-        model3_expl = st.text_area(
-            "Model 3 (Optimal Fertilizer Level) explanation",
-            f"Model 3 identifies the fertilizer level where predicted {crop_display} yield reaches its maximum before diminishing returns begin..."
-        )
-        crop_summary = st.text_area(
-            f"{crop_display} model section summary",
-            f"This section shows how fertilizer affects {crop_display} yield and identifies an environmentally responsible optimum..."
-        )
-
-    elif step == "3️⃣ Second crop":
-        st.subheader(f"{crop2_display} Analysis")
-        st.markdown(
-            textwrap.dedent(
-                f"""
-                This section mirrors the {crop_display} workflow for **{crop2_display}**.
-
-                It prepares a merged dataset of global {crop2_display} yield and fertilizer use, then applies the same modeling logic so both crops can be compared consistently.
-                """
+            plt.plot(
+                x,
+                m * x + b,
+                color="#7C6A4A",
+                linewidth=2.2,
+                alpha=0.8,
+                label="Trendline"
             )
+
+            plt.legend(
+                frameon=True,
+                facecolor="white",
+                edgecolor="#A8C3B0"
+            )
+
+            for spine in ax.spines.values():
+                spine.set_color("#A8C3B0")
+                spine.set_linewidth(1.2)
+
+            plt.title(f"Global {crop} Yield vs Fertilizer Use", fontweight="bold")
+            plt.xlabel("Fertilizer Use (kg/ha)")
+            plt.ylabel("Yield (kg/ha)")
+            plt.grid(True, alpha=0.3)
+
+            st.pyplot(fig2)
+
+        st.markdown("---")
+
+        st.subheader("Correlation Between Fertilizer Use and Yield")
+
+        corr = df_crop_main[["Value_fert", "Value_yield"]].corr()
+        st.dataframe(corr)
+
+        st.caption(
+            "This correlation summarizes how strongly fertilizer use and yield move together "
+            "for the selected crop."
         )
 
-        crop2_yield_expl = st.text_area(
-            f"{crop2_display} yield over time explanation",
-            f"This plot shows how global {crop2_display} yield has changed across decades..."
+        st.markdown("---")
+
+        st.subheader("Model 1: Linear Regression")
+
+        X = df_crop_main[["Value_fert"]]
+        y = df_crop_main["Value_yield"]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
         )
 
-    elif step == "4️⃣ Summary & export":
-        st.subheader("Final Summary")
-        final_summary = st.text_area(
-            "Write your final project summary / conclusions:",
-            f"This project demonstrates how fertilizer affects {crop_plural_display} yields and identifies an optimal application level..."
+        model = LinearRegression()
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+        r2 = r2_score(y_test, y_pred)
+
+        st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
+        st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
+        st.markdown(f"- **RMSE:** {rmse:.2f}")
+        st.markdown(f"- **R²:** {r2:.3f}")
+
+        fig3 = plt.figure(figsize=(10, 6))
+        plt.gcf().patch.set_facecolor("#DDEEE3")
+        ax3 = plt.gca()
+        ax3.set_facecolor("white")
+
+        plt.scatter(
+            y_test,
+            y_pred,
+            color="#B58A4A",
+            edgecolor="black",
+            s=85
         )
 
-        st.subheader("Download Completed Template")
-
-        # Build a markdown version of the filled template
-        template_md = textwrap.dedent(
-            f"""
-            # Sustainable Fertilizer Optimization
-
-            ## Project Summary
-            This project analyzes how fertilizer affects **{crop_plural_display}** yields to find the optimal application point.
-
-            ## Problem & Impact
-            What fertilizer level delivers strong yields for **{crop_display}** without crossing into pollution‑causing excess?
-
-            ## {crop_display} Modeling Summary
-            {crop_summary or '[Add model section summary here]'}
-
-            ## {crop2_display} Section
-            {crop2_yield_expl if 'crop2_yield_expl' in locals() else '[Add second crop explanation here]'}
-
-            ## Final Summary
-            {final_summary}
-            """
+        plt.plot(
+            [y_test.min(), y_test.max()],
+            [y_test.min(), y_test.max()],
+            color="#7C6A4A",
+            linewidth=2.2
         )
 
-        st.download_button(
-            "📥 Download template as Markdown",
-            data=template_md,
-            file_name="sustainable_fertilizer_optimization_template.md",
-            mime="text/markdown",
+        plt.title(f"Model 1: Actual vs Predicted {crop} Yield", fontweight="bold")
+        plt.xlabel("Actual Yield (kg/ha)")
+        plt.ylabel("Predicted Yield (kg/ha)")
+        plt.grid(True, alpha=0.3)
+
+        plt.legend(
+            ["Perfect Prediction Line", "Model Predictions"],
+            frameon=True,
+            facecolor="white",
+            edgecolor="#A8C3B0"
         )
+
+        st.pyplot(fig3)
 
 # -----------------------------
-# 🌿 RIGHT: Chatbot
+# Section 4: Optimal Fertilizer Level (Model 2 + 3)
 # -----------------------------
-with col_chat:
-    st.header("🌱 Fertilizer Intelligence Assistant")
-    st.markdown("Ask questions while you fill out the template.")
+elif step == "4. Optimal Fertilizer Level":
+    st.header(f"🎯 Optimal Fertilizer Level for {crop}")
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+    if df_crop_main is None:
+        st.error(f"Could not find crop `{crop}` in FAOSTAT yield data. Try another name.")
+    else:
+        X = df_crop_main[["Value_fert"]]
+        y = df_crop_main["Value_yield"]
 
-    user_q = st.text_input("Ask a question:")
+        poly = PolynomialFeatures(degree=2, include_bias=False)
+        X_poly = poly.fit_transform(X)
 
-    if user_q:
-        st.session_state.chat_history.append(("user", user_q))
-
-        prompt = (
-            "You are a fertilizer optimization and data modeling assistant. "
-            "Help the user fill out a Sustainable Fertilizer Optimization template. "
-            "Use their crop names when helpful.\n\n"
-            f"Primary crop: {crop_display}\n"
-            f"Second crop: {crop2_display}\n\n"
-            f"User question: {user_q}"
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_poly, y, test_size=0.2, random_state=42
         )
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0
+        model2 = LinearRegression()
+        model2.fit(X_train, y_train)
+        y_pred2 = model2.predict(X_test)
+
+        rmse2 = np.sqrt(mean_squared_error(y_test, y_pred2))
+        r2_2 = r2_score(y_test, y_pred2)
+
+        st.subheader("Model 2: Polynomial Regression (Degree 2)")
+        st.markdown(f"- **Coefficients:** {model2.coef_}")
+        st.markdown(f"- **Intercept:** {model2.intercept_:.2f}")
+        st.markdown(f"- **RMSE:** {rmse2:.2f}")
+        st.markdown(f"- **R²:** {r2_2:.3f}")
+
+        fig1 = plt.figure(figsize=(10, 6))
+        plt.gcf().patch.set_facecolor("#DDEEE3")
+        ax1 = plt.gca()
+        ax1.set_facecolor("white")
+
+        plt.scatter(
+            y_test,
+            y_pred2,
+            color="#B58A4A",
+            edgecolor="black",
+            s=85
         )
 
-        answer = response["choices"][0]["message"]["content"].strip()
-        st.session_state.chat_history.append(("assistant", answer))
+        plt.plot(
+            [y_test.min(), y_test.max()],
+            [y_test.min(), y_test.max()],
+            color="#7C6A4A",
+            linewidth=2.2
+        )
 
-    for role, msg in st.session_state.chat_history:
-        if role == "user":
-            st.markdown(f"**You:** {msg}")
-        else:
-            st.markdown(f"**Assistant:** {msg}")
+        plt.title(f"Model 2: Actual vs Predicted {crop} Yield", fontweight="bold")
+        plt.xlabel("Actual Yield (kg/ha)")
+        plt.ylabel("Predicted Yield (kg/ha)")
+        plt.grid(True, alpha=0.3)
+
+        plt.legend(
+            ["Perfect Prediction Line", "Model Predictions"],
+            frameon=True,
+            facecolor="white",
+            edgecolor="#A8C3B0"
+        )
+
+        st.pyplot(fig1)
+
+        st.markdown("---")
+
+        st.subheader("Model 3: Optimal Fertilizer Level")
+
+        x_range = np.linspace(
+            df_crop_main["Value_fert"].min(),
+            df_crop_main["Value_fert"].max(),
+            200
+        )
+
+        a = model2.coef_[1]   # quadratic term
+        b = model2.coef_[0]   # linear term
+        x_opt = -b / (2 * a)
+
+        x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
+        x_opt_poly = poly.transform(x_opt_df)
+        y_opt = model2.predict(x_opt_poly)[0]
+
+        st.markdown(f"**Optimal Fertilizer (kg/ha):** `{x_opt:.2f}`")
+        st.markdown(f"**Predicted Yield at Optimum (kg/ha):** `{y_opt:.2f}`")
+
+        x_range_df = pd.DataFrame({"Value_fert": x_range})
+        X_curve = poly.transform(x_range_df)
+        y_curve = model2.predict(X_curve)
+
+        fig2 = plt.figure(figsize=(10, 6))
+        plt.gcf().patch.set_facecolor("#DDEEE3")
+        ax2 = plt.gca()
+        ax2.set_facecolor("white")
+
+        plt.plot(
+            x_range,
+            y_curve,
+            color="#7C6A4A",
+            linewidth=2.5,
+            label="Polynomial Curve"
+        )
+
+        plt.scatter(
+            df_crop_main["Value_fert"],
+            df_crop_main["Value_yield"],
+            color="#B58A4A",
+            edgecolor="black",
+            s=85,
+            alpha=0.8,
+            label="Data Points"
+        )
+
+        plt.scatter(
+            x_opt,
+            y_opt,
+            color="#4A7C59",
+            s=120,
+            edgecolor="black",
+            zorder=5,
+            label=f"Optimal Point ({x_opt:.1f} kg/ha)"
+        )
+
+        plt.title(f"Model 3: Optimal Fertilizer Level for Maximum {crop} Yield", fontweight="bold")
+        plt.xlabel("Fertilizer Use (kg/ha)")
+        plt.ylabel("Predicted Yield (kg/ha)")
+        plt.grid(True, alpha=0.3)
+
+        plt.legend(
+            frameon=True,
+            facecolor="white",
+            edgecolor="#A8C3B0"
+        )
+
+        st.pyplot(fig2)
+
+# -----------------------------
+# Section 5: Second Crop Analysis
+# -----------------------------
+elif step == "5. Second Crop Analysis":
+    st.header(f"🌾 Second Crop Analysis: {crop2}")
+
+    if not crop2:
+        st.info("Enter a second crop name in the sidebar to enable this section.")
+    elif df_crop_second is None:
+        st.error(f"Could not find crop `{crop2}` in FAOSTAT yield data. Try another name.")
+    else:
+        st.subheader(f"Global {crop2} Yield Over Time")
+
+        fig = plt.figure(figsize=(10, 5))
+        plt.plot(
+            df_crop_second["Year"],
+            df_crop_second["Value_yield"],
+            color="#d5b37e",
+            linewidth=2.5
+        )
+
+        plt.gcf().patch.set_facecolor("#D5B37E")
+        plt.title(f"Global {crop2} Yield Over Time", fontweight="bold")
+        plt.xlabel("Year")
+        plt.ylabel("Yield (kg/ha)")
+        plt.grid(True)
+
+        st.pyplot(fig)
+
+        st.markdown("---")
+
+        st.subheader(f"{crop2} Yield vs Fertilizer Use")
+
+        fig2 = plt.figure(figsize=(10, 6))
+        plt.gcf().patch.set_facecolor("#DDEEE3")
+        ax = plt.gca()
+        ax.set_facecolor("white")
+
+        plt.scatter(
+            df_crop_second["Value_fert"],
+            df_crop_second["Value_yield"],
+            color="#B58A4A",
+            alpha=0.85,
+            s=85,
+            edgecolor="black",
+            linewidth=0.5,
+            label=f"{crop2} Data Points"
+        )
+
+        x = np.linspace(
+            df_crop_second["Value_fert"].min(),
+            df_crop_second["Value_fert"].max(),
+            100
+        )
+        m, b = np.polyfit(
+            df_crop_second["Value_fert"],
+            df_crop_second["Value_yield"],
+            1
+        )
+
+        plt.plot(
+            x,
+            m * x + b,
+            color="#7C6A4A",
+            linewidth=2.2,
+            alpha=0.8,
+            label="Trendline"
+        )
+
+        plt.legend(
+            frameon=True,
+            facecolor="white",
+            edgecolor="#A8C3B0"
+        )
+
+        for spine in ax.spines.values():
+            spine.set_color("#A8C3B0")
+            spine.set_linewidth(1.2)
+
+        plt.title(f"Global {crop2} Yield vs Fertilizer Use", fontweight="bold")
+        plt.xlabel("Fertilizer Use (kg/ha)")
+        plt.ylabel("Yield (kg/ha)")
+        plt.grid(True, alpha=0.3)
+
+        st.pyplot(fig2)
+
+# -----------------------------
+# Section 6: Summary
+# -----------------------------
+elif step == "6. Summary":
+    st.header("📜 Summary & Export")
+
+    st.markdown("""
+This analysis:
+
+- links global fertilizer use to crop yield
+- shows how nitrogen-heavy application patterns have emerged
+- quantifies the fertilizer–yield relationship for your selected crops
+- identifies an optimal fertilizer level where yield is maximized before diminishing returns
+    """)
+
+    st.markdown("You can copy this summary into your report or portfolio.")
+
+    # Optional: add a download button for a text summary
+    summary_text = f"""
+Sustainable Fertilizer Optimization Summary
+
+Main crop: {crop}
+Second crop: {crop2}
+
+This project uses FAOSTAT fertilizer and yield data to model how fertilizer application
+affects crop performance. Linear and polynomial regression models quantify the relationship
+between fertilizer use (kg/ha) and yield (kg/ha), and identify an optimal fertilizer level
+that maximizes predicted yield while avoiding unnecessary input use.
+"""
+
+    st.download_button(
+        label="📥 Download summary as .txt",
+        data=summary_text,
+        file_name="fertilizer_optimization_summary.txt",
+        mime="text/plain"
+    )
 
 
 
