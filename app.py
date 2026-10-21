@@ -114,8 +114,9 @@ if _client and chat_query:
     else:
         q_emb = _client.embeddings.create(
             model="text-embedding-3-small",
-            input=[chat_query.strip()]
-        )
+            input=[chat_query.strip()[:500]]
+        ).data[0].embedding
+
 
         q_vec = np.array([q_emb], dtype="float32")
         D, I = faiss_index.search(q_vec, k=5)
