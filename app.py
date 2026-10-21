@@ -310,8 +310,8 @@ Using linear and polynomial models, the analysis:
             st.markdown(f"**Second crop:** `{crop2}`")
 
     with col2:    
-            st.markdown("### 🤖 Assistant")
-            st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
+        st.markdown("### 🤖 Assistant")
+        st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
 
         if chat_query and not _client:
             st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
