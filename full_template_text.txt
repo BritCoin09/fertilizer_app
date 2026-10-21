@@ -1,0 +1,1677 @@
+Sustainable Fertilizer Optimization
+Project Summary
+This project analyzes how fertilizer affects [YOUR CROP(S) HERE] yields to find the optimal application point (the level that delivers strong crop performance without wasting money or causing nutrient pollution). Using linear and polynomial models, I identify where fertilizer provides meaningful returns and where diminishing returns begin. The goal is to support farmers in using fertilizer efficiently while protecting soil, water, and the environment.
+
+🌍 Problem & Impact
+Fertilizer is one of the most powerful tools in agriculture. It boosts crop growth, increases food production, and supports global food security.
+
+But too much fertilizer becomes pollution, wastes money, and harms soil and water systems. The challenge is finding the point where fertilizer is helpful, not harmful.
+
+This project asks one core question:
+
+♻️ What fertilizer level delivers strong yields without crossing into pollution‑causing excess? ♻️
+
+Using global [YOUR CROP(S) HERE] data, the analysis measures how yield responds to fertilizer, identifies where diminishing returns begin, and pinpoints the “sweet spot” where productivity stays high and environmental risk stays low. This simple one‑input, one‑output approach creates a clear baseline for understanding fertilizer efficiency and sets the stage for future work that includes soil, weather, and environmental indicators.
+
+One input. One output. One environmentally responsible optimum.
+
+Section 1 📦 Imports
+
+[ ]
+# Core libraries
+import pandas as pd
+import numpy as np
+import os
+
+# Visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Modeling
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
+
+# Settings
+plt.rcParams["figure.figsize"] = (10, 6)
+sns.set_style("ticks")
+
+# Kaggle access (if needed)
+import kagglehub
+
+# Advanced Utilities for RAG & UI
+import faiss
+from openai import OpenAI
+import glob
+import ipywidgets as widgets
+from IPython.display import display
+🔍 RAG Assistant Setup
+This cell initializes the Retrieval-Augmented Generation (RAG) system used in this notebook.
+It loads the text files, builds embeddings, creates the FAISS index, and prepares the interactive RAG interface.
+
+Run this cell once before asking any questions in the RAG input box.
+
+
+[ ]
+
+Requirement already satisfied: faiss-cpu in /usr/local/lib/python3.13/dist-packages (1.15.1)
+Requirement already satisfied: numpy>=1.25 in /usr/local/lib/python3.13/dist-packages (from faiss-cpu) (2.1.3)
+Requirement already satisfied: packaging in /usr/local/lib/python3.13/dist-packages (from faiss-cpu) (26.3)
+🔑 Enter Your OpenAI API Key
+To use the RAG assistant, you must provide your own OpenAI API key.
+Paste your key in the code cell below!
+
+
+[ ]
+os.environ["OPENAI_API_KEY"] = "YOUR_KEY_HERE"
+
+[ ]
+client = OpenAI()
+
+# -----------------------------
+# 1. Load documents
+# -----------------------------
+def load_documents():
+    docs = []
+
+    for path in glob.glob("/content/text/*.txt*"):
+        with open(path, "r", encoding="utf-8") as f:
+            docs.append({"path": path, "text": f.read()})
+
+    for path in glob.glob("/content/transcripts/*.txt*"):
+        with open(path, "r", encoding="utf-8") as f:
+            docs.append({"path": path, "text": f.read()})
+
+    print(f"Loaded {len(docs)} documents.")
+    return docs
+
+documents = load_documents()
+
+# -----------------------------
+# 2. Pure Python chunker
+# -----------------------------
+def chunk_text(text, chunk_size=2000, overlap=200):
+    chunks = []
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start = end - overlap
+    return chunks
+
+chunks = []
+for d in documents:
+    for c in chunk_text(d["text"]):
+        chunks.append({"text": c, "source": d["path"]})
+
+print("Total chunks:", len(chunks))
+
+# -----------------------------
+# 3. Embed chunks
+# -----------------------------
+def embed_texts(text_list):
+    all_embeddings = []
+    batch_size = 50
+
+    for i in range(0, len(text_list), batch_size):
+        batch = text_list[i:i+batch_size]
+        resp = client.embeddings.create(
+            model="text-embedding-3-small",
+            input=batch
+        )
+        embs = [item.embedding for item in resp.data]
+        all_embeddings.extend(embs)
+
+    return np.array(all_embeddings).astype("float32")
+
+embs = embed_texts([c["text"] for c in chunks])
+index = faiss.IndexFlatL2(embs.shape[1])
+index.add(embs)
+
+print("FAISS index built.")
+
+# -----------------------------
+# 4. Retrieval
+# -----------------------------
+def retrieve(query, k=5):
+    q_emb = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=[query]
+    ).data[0].embedding
+
+    q_emb = np.array(q_emb).astype("float32").reshape(1, -1)
+    D, I = index.search(q_emb, k)
+
+    return [chunks[idx] for idx in I[0]]
+
+# -----------------------------
+# 5. Answer function
+# -----------------------------
+def answer_question(q):
+    retrieved = retrieve(q)
+
+    context = "\n\n---\n\n".join(
+        [f"Source: {d['source']}\n\n{d['text']}" for d in retrieved]
+    )
+
+    prompt = (
+        "Use the following context to answer the question. "
+        "If the context is partially relevant, infer the best answer. "
+        "If the context is unrelated, say you don't know.\n\n"
+        f"Context:\n{context}\n\nQuestion: {q}\n\nAnswer concisely:"
+    )
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0
+    )
+
+    return resp.choices[0].message.content.strip()
+
+
+# -----------------------------
+# 6. UI
+# -----------------------------
+# 🌿 Fertilizer Intelligence Assistant Panel
+panel_style = widgets.HTML(
+    value="""
+    <div style="
+        border: 2px solid #4a7c59;
+        border-radius: 10px;
+        padding: 15px;
+        background-color: #f4f9f4;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        width: 650px;
+        margin-bottom: 15px;
+    ">
+        <h3 style="
+            margin: 0;
+            color: #2e5e37;
+            font-family: 'Arial';
+        ">
+            🌱 Fertilizer Intelligence Assistant
+        </h3>
+        <p style="
+            margin-top: 8px;
+            color: #3a4f41;
+            font-size: 14px;
+            font-family: 'Arial';
+        ">
+            Ask anything about crops, nutrients, soil health, fertilizer strategies, or your transcripts.
+        </p>
+    </div>
+    """
+)
+
+styled_input = widgets.Text(
+    value='',
+    placeholder='Ask the assistant...',
+    description='',
+    disabled=False,
+    layout=widgets.Layout(width='650px')
+)
+
+styled_output = widgets.Output(
+    layout=widgets.Layout(
+        border='2px solid #4a7c59',
+        padding='10px',
+        border_radius='10px',
+        width='650px',
+        background_color='#ffffff'
+    )
+)
+
+def on_submit(change):
+    with styled_output:
+        styled_output.clear_output()
+        print("🌾 Thinking...")
+        ans = answer_question(change['new'])
+        print("\n" + ans)
+
+styled_input.observe(on_submit, names='value')
+
+display(panel_style)
+display(styled_input)
+display(styled_output)
+
+
+Section 2 📊 Data & EDA
+This project uses two global, annual datasets:
+
+Fertilizer use (kg/ha)
+
+Crop yield (kg/ha) for [YOUR CROP(S) HERE]
+
+The fertilizer dataset provides global fertilizer application per year, while the yield dataset provides crop‑specific yields.
+
+Exploratory Analysis
+
+The EDA examines:
+
+long‑term fertilizer use trends
+
+yield trends for [YOUR CROP(S) HERE]
+
+the relationship between fertilizer and yield
+
+where diminishing returns begin as fertilizer increases
+
+This analysis builds the foundation for the regression and polynomial models that follow, helping identify the fertilizer levels that maximize yield without unnecessary environmental impact.
+
+Load Fertilizer Dataset
+
+[ ]
+path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
+
+fert = pd.read_csv(
+    os.path.join(path, "Environment_Fertilizers_E_All_Data_(Normalized)", "Environment_Fertilizers_E_All_Data_(Normalized).csv"),
+    encoding="latin1"
+)
+Downloading to /root/.cache/kagglehub/datasets/raaad3000/faostat-fertilizers-indicators/1.archive...
+100%|██████████| 1.18M/1.18M [00:00<00:00, 110MB/s]Extracting files...
+
+This dataset contains global fertilizer application data from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with crop yield information in later steps.
+
+Filter Fertilizer Data
+Using the “Use per area of cropland” element keeps fertilizer values consistent with yield units.
+
+
+[ ]
+fert_crop = fert[fert["Element"] == "Use per area of cropland"]
+fert_crop.head()
+
+Prepare NPK Fertilizer Data
+This step filters the fertilizer dataset to the three primary nutrients: Nitrogen (N), Phosphorus (P₂O₅), and Potassium (K₂O). It standardizes their labels, removes missing values, and excludes FAO aggregate regions to keep only real countries.
+
+
+[ ]
+fert_npk = fert_crop[
+    fert_crop["Item"].isin([
+        "Nutrient nitrogen N (total)",
+        "Nutrient phosphate P2O5 (total)",
+        "Nutrient potash K2O (total)"
+    ])
+]
+
+fert_npk["Nutrient"] = fert_npk["Item"].map({
+    "Nutrient nitrogen N (total)": "Nitrogen (N)",
+    "Nutrient phosphate P2O5 (total)": "Phosphorus (P₂O₅)",
+    "Nutrient potash K2O (total)": "Potassium (K₂O)"
+})
+
+fert_npk = fert_npk.dropna(subset=["Value"])
+aggregates = [
+    "World",
+    "Western Europe",
+    "Western Asia",
+    "Eastern Africa",
+    "Least Developed Countries",
+    "Low Income Food Deficit Countries",
+    "Northern America",
+    "Europe",
+    "Africa",
+    "Asia",
+    "Oceania"
+]
+
+fert_npk_clean = fert_npk[~fert_npk["Area"].isin(aggregates)]
+fert_npk_clean["Area"].nunique()
+198
+Global NPK Fertilizer Trends
+
+[ ]
+fig, ax = plt.subplots(figsize=(12, 6))
+
+sns.lineplot(
+    data=fert_npk_clean,
+    x="Year",
+    y="Value",
+    hue="Nutrient",
+    palette={
+    "Nitrogen (N)": "#2E7D32",
+    "Phosphorus (P₂O₅)": "#8D6E63",
+    "Potassium (K₂O)": "#F9A825"
+},
+    ax=ax
+)
+
+ax.grid(
+    True,
+    which="both",
+    axis="both",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+fig.patch.set_facecolor("#F2F2F0")
+ax.set_facecolor("#FAFAF7")
+
+leg = plt.legend()
+leg.get_frame().set_facecolor("#FAFAF7")
+leg.get_frame().set_edgecolor("#D9D9D6")
+
+plt.ylabel("Nutrient Application Rate (kg/ha)")
+plt.title("Global NPK Fertilizer Use Over Time (kg/ha)", fontweight="bold")
+plt.show()
+
+
+This chart shows that global fertilizer use has become increasingly nitrogen‑heavy over the past 60 years. Nitrogen application rises sharply, while phosphorus and potassium remain relatively stable. This imbalance highlights long‑term concerns for soil health, environmental impact, and sustainable nutrient management.
+
+Distribution of Fertilizer Use by Nutrient (kg/ha)
+This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
+
+
+[ ]
+fig = plt.figure(figsize=(10, 6))
+fig.patch.set_facecolor("#F2F2F0")
+
+ax = plt.gca()
+ax.set_facecolor("#FAFAF7")
+
+sns.boxplot(
+    data=fert_npk_clean,
+    x="Nutrient",
+    y="Value",
+    hue="Nutrient",
+      palette={
+    "Nitrogen (N)": "#2E7D32",
+    "Phosphorus (P₂O₅)": "#8D6E63",
+    "Potassium (K₂O)": "#F9A825"
+},
+    legend=False,
+    ax=ax
+)
+
+ax.grid(
+    True,
+    which="both",
+    axis="y",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+ax.set_axisbelow(True)
+
+plt.xlabel("Nutrient Type")
+plt.ylabel("Fertilizer Use (kg/ha)")
+plt.title("Distribution of NPK Fertilizer Use (kg/ha)", fontweight="bold")
+
+plt.show()
+
+This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
+
+Top 10 Countries by Nitrogen Use (kg/ha)
+
+[ ]
+
+
+The Netherlands appears at the top of the ranking due to its extremely intensive agricultural system. Despite its small land area, it is one of the world’s largest agricultural exporters, relying on high‑yield greenhouse production, dense livestock operations, and nutrient‑intensive farming practices. These factors drive nitrogen application far above global averages.
+
+Global Fertilizer Use Over Time (kg/ha)
+
+[ ]
+df_fert = fert.groupby("Year")["Value"].mean().reset_index()
+plt.figure(figsize=(10,5))
+plt.gcf().patch.set_facecolor("#DDEEE3")
+
+plt.plot(
+    df_fert["Year"],
+    df_fert["Value"],
+    color="#4A7C59",
+    linewidth=2.8,
+    marker="o"
+)
+
+plt.title("Global Fertilizer Use Over Time", fontweight='bold')
+plt.xlabel("Year")
+plt.ylabel("Fertilizer Use (kg/ha)")
+plt.grid(True)
+plt.show()
+
+
+This line chart shows the long‑term rise in global fertilizer application rates. Fertilizer use has increased steadily over the past several decades as global food production expanded, driven by population growth, intensification of agriculture, and the adoption of high‑yield farming practices. This upward trend provides important context for understanding modern nutrient demand and environmental pressures.
+
+📜 Historical Context: Why Global Fertilizer Use Dropped (1990–2010)
+Global fertilizer use does not move randomly, it responds to major geopolitical, economic, and agricultural shifts. The decline from 1990 to 2010 aligns with several real‑world events that disrupted fertilizer production, trade, and demand across multiple continents.
+
+1. Collapse of the Soviet Union (1991)
+
+The Soviet Union was one of the world’s largest fertilizer producers and consumers. When it dissolved:
+
+fertilizer factories shut down
+
+subsidies disappeared
+
+millions of hectares of farmland were abandoned
+
+agricultural output collapsed across Russia, Ukraine, Kazakhstan, and Eastern Europe
+
+This event alone caused a massive global drop in fertilizer use starting in the early 1990s.
+
+2. Early 1990s Global Recession
+
+Economic downturns reduced farm incomes worldwide. Farmers cut back on inputs, including nitrogen, phosphorus, and potassium fertilizers.
+
+3. Agricultural Restructuring in the 1990s
+
+During this decade:
+
+many countries shifted toward lower‑input farming
+
+environmental regulations tightened
+
+fertilizer efficiency improved
+
+some regions intentionally reduced nitrogen use
+
+These structural changes slowed fertilizer demand even as economies recovered.
+
+4. Asian Financial Crisis (1997–1998)
+
+Major agricultural economies (including Indonesia, Thailand, Malaysia, and South Korea) experienced severe economic contraction.Fertilizer imports dropped sharply, contributing to the global decline.
+
+5. Global Financial Crisis (2008–2010)
+
+This is the sharp dip visible in the graph around 2008–2010.
+
+fertilizer prices spiked
+
+credit tightened
+
+farmers delayed or reduced fertilizer purchases
+
+global demand fell rapidly
+
+This created the steepest short‑term decline in the entire dataset.
+
+6. Post‑2010 Recovery
+
+As global markets stabilized:
+
+fertilizer production increased
+
+agricultural investment grew
+
+demand rebounded
+
+This explains the upward trend after 2010.
+
+Load Crop Yield Dataset
+
+[ ]
+crop_yield = kagglehub.dataset_download(
+    "vijayveersingh/faostat-crops-and-livestock-data"
+)
+Downloading to /root/.cache/kagglehub/datasets/vijayveersingh/faostat-crops-and-livestock-data/1.archive...
+100%|██████████| 28.4M/28.4M [00:00<00:00, 143MB/s] Extracting files...
+
+This dataset provides global crop yield information from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with fertilizer application data in the next steps. This forms the foundation for the crop‑specific modeling and analysis that follows.
+
+Load Raw Crop Yield Data
+
+[ ]
+df_yield = pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
+df_yield.head()
+
+I load the full FAOSTAT crop and livestock dataset here so I can filter it down to crop yields only and prepare it for cleaning, merging, and analysis in the next steps.
+
+Reshape and Filter Crop Yield Data
+I reshape the FAOSTAT dataset from wide to long format so each row represents a single crop–year observation. After converting the year column, I filter the dataset to include only yield values for all usable crops. This prepares the data so users can select any crop they want to analyze and supports global aggregation for visualization and modeling in later steps.
+
+
+[ ]
+df_long = df_yield.melt(
+    id_vars=[
+        "Area Code", "Area Code (M49)", "Area",
+        "Item Code", "Item Code (CPC)", "Item",
+        "Element Code", "Element", "Unit"
+    ],
+    var_name="Year",
+    value_name="Value"
+)
+
+# Convert 'Y1961' → 1961
+df_long["Year"] = df_long["Year"].str.replace("Y", "").astype(int)
+
+### Every Usable Crop
+
+crop_yield_only = df_long[df_long["Element"] == "Yield"]
+
+
+global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
+
+df_long.columns
+
+Index(['Area Code', 'Area Code (M49)', 'Area', 'Item Code', 'Item Code (CPC)',
+       'Item', 'Element Code', 'Element', 'Unit', 'Year', 'Value'],
+      dtype='object')
+Choose Your Crop
+
+[ ]
+sorted(crop_yield_only["Item"].unique())
+
+# ↑ Uncomment this line to preview all available crops in the dataset
+['Abaca, manila hemp, raw',
+ 'Agave fibres, raw, n.e.c.',
+ 'Almonds, in shell',
+ 'Anise, badian, coriander, cumin, caraway, fennel and juniper berries, raw',
+ 'Apples',
+ 'Apricots',
+ 'Areca nuts',
+ 'Artichokes',
+ 'Asparagus',
+ 'Avocados',
+ 'Bambara beans, dry',
+ 'Bananas',
+ 'Barley',
+ 'Beans, dry',
+ 'Blueberries',
+ 'Broad beans and horse beans, dry',
+ 'Broad beans and horse beans, green',
+ 'Buckwheat',
+ 'Cabbages',
+ 'Canary seed',
+ 'Cantaloupes and other melons',
+ 'Carrots and turnips',
+ 'Cashew nuts, in shell',
+ 'Cashewapple',
+ 'Cassava leaves',
+ 'Cassava, fresh',
+ 'Castor oil seeds',
+ 'Cauliflowers and broccoli',
+ 'Cereals n.e.c.',
+ 'Cereals, primary',
+ 'Cherries',
+ 'Chestnuts, in shell',
+ 'Chick peas, dry',
+ 'Chicory roots',
+ 'Chillies and peppers, dry (Capsicum spp., Pimenta spp.), raw',
+ 'Chillies and peppers, green (Capsicum spp. and Pimenta spp.)',
+ 'Cinnamon and cinnamon-tree flowers, raw',
+ 'Citrus Fruit, Total',
+ 'Cloves (whole stems), raw',
+ 'Cocoa beans',
+ 'Coconuts, in shell',
+ 'Coffee, green',
+ 'Cow peas, dry',
+ 'Cranberries',
+ 'Cucumbers and gherkins',
+ 'Currants',
+ 'Dates',
+ 'Edible roots and tubers with high starch or inulin content, n.e.c., fresh',
+ 'Eggplants (aubergines)',
+ 'Eggs Primary',
+ 'Eggs from other birds in shell, fresh, n.e.c.',
+ 'Fibre Crops, Fibre Equivalent',
+ 'Figs',
+ 'Flax, raw or retted',
+ 'Fonio',
+ 'Fruit Primary',
+ 'Ginger, raw',
+ 'Gooseberries',
+ 'Grapes',
+ 'Green corn (maize)',
+ 'Green garlic',
+ 'Groundnuts, excluding shelled',
+ 'Hazelnuts, in shell',
+ 'Hempseed',
+ 'Hen eggs in shell, fresh',
+ 'Hop cones',
+ 'Jojoba seeds',
+ 'Jute, raw or retted',
+ 'Kapok fruit',
+ 'Karite nuts (sheanuts)',
+ 'Kenaf, and other textile bast fibres, raw or retted',
+ 'Kiwi fruit',
+ 'Kola nuts',
+ 'Leeks and other alliaceous vegetables',
+ 'Lemons and limes',
+ 'Lentils, dry',
+ 'Lettuce and chicory',
+ 'Linseed',
+ 'Locust beans (carobs)',
+ 'Lupins',
+ 'Maize (corn)',
+ 'Mangoes, guavas and mangosteens',
+ 'Maté leaves',
+ 'Melonseed',
+ 'Milk, Total',
+ 'Millet',
+ 'Mixed grain',
+ 'Mustard seed',
+ 'Natural rubber in primary forms',
+ 'Nutmeg, mace, cardamoms, raw',
+ 'Oats',
+ 'Oil palm fruit',
+ 'Oilcrops, Cake Equivalent',
+ 'Oilcrops, Oil Equivalent',
+ 'Okra',
+ 'Olives',
+ 'Onions and shallots, dry (excluding dehydrated)',
+ 'Onions and shallots, green',
+ 'Oranges',
+ 'Other beans, green',
+ 'Other berries and fruits of the genus vaccinium n.e.c.',
+ 'Other citrus fruit, n.e.c.',
+ 'Other fibre crops, raw, n.e.c.',
+ 'Other fruits, n.e.c.',
+ 'Other nuts (excluding wild edible nuts and groundnuts), in shell, n.e.c.',
+ 'Other oil seeds, n.e.c.',
+ 'Other pome fruits',
+ 'Other pulses n.e.c.',
+ 'Other stimulant, spice and aromatic crops, n.e.c.',
+ 'Other stone fruits',
+ 'Other sugar crops n.e.c.',
+ 'Other tropical fruits, n.e.c.',
+ 'Other vegetables, fresh n.e.c.',
+ 'Papayas',
+ 'Peaches and nectarines',
+ 'Pears',
+ 'Peas, dry',
+ 'Peas, green',
+ 'Pepper (Piper spp.), raw',
+ 'Peppermint, spearmint',
+ 'Persimmons',
+ 'Pigeon peas, dry',
+ 'Pineapples',
+ 'Pistachios, in shell',
+ 'Plantains and cooking bananas',
+ 'Plums and sloes',
+ 'Pomelos and grapefruits',
+ 'Poppy seed',
+ 'Potatoes',
+ 'Pulses, Total',
+ 'Pumpkins, squash and gourds',
+ 'Pyrethrum, dried flowers',
+ 'Quinces',
+ 'Quinoa',
+ 'Ramie, raw or retted',
+ 'Rape or colza seed',
+ 'Raspberries',
+ 'Raw hides and skins of buffaloes',
+ 'Raw hides and skins of cattle',
+ 'Raw hides and skins of goats or kids',
+ 'Raw hides and skins of sheep or lambs',
+ 'Raw milk of buffalo',
+ 'Raw milk of camel',
+ 'Raw milk of cattle',
+ 'Raw milk of goats',
+ 'Raw milk of sheep',
+ 'Rice',
+ 'Roots and Tubers, Total',
+ 'Rye',
+ 'Safflower seed',
+ 'Seed cotton, unginned',
+ 'Sesame seed',
+ 'Sisal, raw',
+ 'Sorghum',
+ 'Sour cherries',
+ 'Soya beans',
+ 'Spinach',
+ 'Strawberries',
+ 'String beans',
+ 'Sugar Crops Primary',
+ 'Sugar beet',
+ 'Sugar cane',
+ 'Sunflower seed',
+ 'Sweet potatoes',
+ 'Tallowtree seeds',
+ 'Tangerines, mandarins, clementines',
+ 'Taro',
+ 'Tea leaves',
+ 'Tomatoes',
+ 'Treenuts, Total',
+ 'Triticale',
+ 'True hemp, raw or retted',
+ 'Tung nuts',
+ 'Unmanufactured tobacco',
+ 'Vanilla, raw',
+ 'Vegetables Primary',
+ 'Vetches',
+ 'Walnuts, in shell',
+ 'Watermelons',
+ 'Wheat',
+ 'Yams',
+ 'Yautia']
+
+[ ]
+
+
+Section 3 [Your Crop] Modeling
+In this section, I build three models to understand how fertilizer application influences [Your Crop] yield. I begin with a simple linear regression to establish the baseline relationship between fertilizer use and yield. I then extend the model using polynomial features to capture curvature in the yield response. Finally, I identify the fertilizer level that maximizes predicted yield, providing a practical recommendation for optimal nutrient application.
+
+Prepare [Your Crop] Dataset for Regression
+To prepare the [Your Crop] modeling dataset, I merge global [Your Crop] yield data with global fertilizer application data. This creates a single dataframe where each row represents a year, the corresponding [Your Crop] yield, and the fertilizer applied that year. This merged dataset serves as the foundation for all three [Your Crop] models that follow.
+
+
+[ ]
+
+
+Visualize [Your Crop] Yield Over Time
+
+[ ]
+plt.figure(figsize=(10,5))
+
+# Base plot (neutral default)
+plt.plot(df_crop["Year"], df_crop["Value_yield"], linewidth=2.5)
+
+# OPTIONAL: Customize colors for this plot
+# Uncomment and edit these if you want to personalize the visualization.
+# line_color = "#B58A4A"          # Line color
+# background_color = "#EDE7D4"    # Background color
+# grid_color = "#CCCCCC"          # Gridline color
+#
+# plt.plot(df_crop["Year"], df_crop["Value_yield"], color=line_color, linewidth=2.5)
+# plt.gcf().patch.set_facecolor(background_color)
+# plt.grid(True, color=grid_color)
+
+plt.title(f"Global {crop} Yield Over Time", fontweight="bold")
+plt.xlabel("Year")
+plt.ylabel("Yield (kg/ha)")
+plt.grid(True)
+plt.show()
+
+
+Add chart explanation here
+
+Visualize Fertilizer vs [Your Crop] Yield
+
+[ ]
+plt.figure(figsize=(10,6))
+
+# Outer background (sage)
+plt.gcf().patch.set_facecolor("#DDEEE3")
+
+# Inner background (white)
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# OPTIONAL: Customize crop colors
+# Uncomment and edit these if you want to personalize the crop colors.
+# crop_color = "#B58A4A"          # Scatter point color
+# trendline_color = "#7C6A4A"     # Trendline color
+
+# Scatter points (crop color)
+plt.scatter(
+    df_crop["Value_fert"],
+    df_crop["Value_yield"],
+    color=crop_color if 'crop_color' in globals() else "#B58A4A",
+    alpha=0.85,
+    s=85,
+    edgecolor="black",
+    linewidth=0.5,
+    label=f"{crop} Data Points"
+)
+
+# Trendline
+x = np.linspace(df_crop["Value_fert"].min(), df_crop["Value_fert"].max(), 100)
+m, b = np.polyfit(df_crop["Value_fert"], df_crop["Value_yield"], 1)
+
+plt.plot(
+    x,
+    m*x + b,
+    color=trendline_color if 'trendline_color' in globals() else "#7C6A4A",
+    linewidth=2.2,
+    alpha=0.8,
+    label="Trendline"
+)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+# Soft sage spines
+for spine in ax.spines.values():
+    spine.set_color("#A8C3B0")
+    spine.set_linewidth(1.2)
+
+
+# Title + labels
+plt.title(f"Global {crop} Yield vs Fertilizer Use", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Yield (kg/ha)")
+
+# Soft grid
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+
+
+Add chart explanation
+
+Correlation Between Fertilizer Use and [Your Crop] Yield
+
+[ ]
+df_crop[["Value_fert", "Value_yield"]].corr()
+
+Add explanation for coorelation
+
+[Your Crop] Model 1 Linear Regression
+Linear regression establishes the baseline relationship between fertilizer use and [Your Crop] yield. This model fits a straight line to the data to measure how much yield increases for each additional kilogram of fertilizer applied. It provides the simplest possible view of the fertilizer–yield relationship and serves as the foundation for comparing more advanced models.
+
+
+[ ]
+# Features and target
+X = df_crop[["Value_fert"]]
+y = df_crop["Value_yield"]
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Metrics
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+r2 = r2_score(y_test, y_pred)
+
+print("Model 1: Linear Regression")
+print("--------------------------")
+print(f"Coefficient (slope): {model.coef_[0]:.2f}")
+print(f"Intercept: {model.intercept_:.2f}")
+print(f"RMSE: {rmse:.2f}")
+print(f"R² Score: {r2:.3f}")
+
+# Plot: Actual vs Predicted
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# OPTIONAL: Customize colors
+# scatter_color = "#B58A4A"
+# line_color = "#7C6A4A"
+
+plt.scatter(
+    y_test,
+    y_pred,
+    color=scatter_color if 'scatter_color' in globals() else "#B58A4A",
+    edgecolor="black",
+    s=85
+)
+
+plt.plot(
+    [y_test.min(), y_test.max()],
+    [y_test.min(), y_test.max()],
+    color=line_color if 'line_color' in globals() else "#7C6A4A",
+    linewidth=2.2
+)
+
+plt.title(f"Model 1: Actual vs Predicted {crop} Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+
+plt.tight_layout()
+plt.show()
+
+
+Add Model 1 explanation
+
+[Your Crop] Model 2 Polynomial Regression
+Polynomial regression allows the model to capture curvature in the fertilizer–yield relationship. In real agronomy, yield does not increase linearly forever. Instead, crops experience diminishing returns, where each additional unit of fertilizer contributes less to yield than the previous one.
+
+To model this behavior, I introduce a second‑degree polynomial term. This enables the model to fit a curved response and better reflect real‑world fertilizer efficiency patterns.
+
+
+[ ]
+
+# Features and target
+X = df_crop[["Value_fert"]]
+y = df_crop["Value_yield"]
+
+# Polynomial transformation
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(
+    X_poly, y, test_size=0.2, random_state=42
+)
+
+# Model
+model2 = LinearRegression()
+model2.fit(X_train, y_train)
+
+# Predictions
+y_pred2 = model2.predict(X_test)
+
+# Metrics
+rmse2 = np.sqrt(mean_squared_error(y_test, y_pred2))
+r2_2 = r2_score(y_test, y_pred2)
+
+print("Model 2: Polynomial Regression (Degree 2)")
+print("-----------------------------------------")
+print(f"Coefficients: {model2.coef_}")
+print(f"Intercept: {model2.intercept_:.2f}")
+print(f"RMSE: {rmse2:.2f}")
+print(f"R² Score: {r2_2:.3f}")
+
+# Plot: Actual vs Predicted
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# OPTIONAL: Customize colors
+# scatter_color = "#B58A4A"
+# line_color = "#7C6A4A"
+
+plt.scatter(
+    y_test,
+    y_pred2,
+    color=scatter_color if 'scatter_color' in globals() else "#B58A4A",
+    edgecolor="black",
+    s=85
+)
+
+plt.plot(
+    [y_test.min(), y_test.max()],
+    [y_test.min(), y_test.max()],
+    color=line_color if 'line_color' in globals() else "#7C6A4A",
+    linewidth=2.2
+)
+
+plt.title(f"Model 2: Actual vs Predicted {crop} Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+Add Model 2 explanation
+
+[Your Crop] Model 3 Optimal Fertilizer Level
+To turn the curved relationship from Model 2 into a practical recommendation, Model 3 identifies the exact fertilizer level where predicted [Your Crop] yield reaches its maximum before diminishing returns begin. This step translates the polynomial curve into a real‑world decision point: the fertilizer “sweet spot” that maximizes yield without unnecessary input use.
+
+
+[ ]
+# Smooth range of fertilizer values for plotting the polynomial curve
+x_range = np.linspace(
+    df_crop["Value_fert"].min(),
+    df_crop["Value_fert"].max(),
+    200
+)
+
+# Extract coefficients
+a = model2.coef_[1]   # quadratic term
+b = model2.coef_[0]   # linear term
+x_opt = -b / (2 * a)
+
+# Compute optimal fertilizer level
+x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
+x_opt_poly = poly.transform(x_opt_df)
+y_opt = model2.predict(x_opt_poly)[0]
+
+print("Model 3: Optimal Fertilizer Level")
+print("----------------------------------")
+print("Optimal Fertilizer (kg/ha):", round(x_opt, 2))
+print("Predicted Yield at Optimum (kg/ha):", round(y_opt, 2))
+
+# Generate smooth curve for plotting
+x_range_df = pd.DataFrame({"Value_fert": x_range})
+X_curve = poly.transform(x_range_df)
+y_curve = model2.predict(X_curve)
+
+# Plot
+plt.figure(figsize=(10,6))
+plt.gcf().patch.set_facecolor("#DDEEE3")   # sage outer background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# OPTIONAL: Customize colors
+# curve_color = "#7C6A4A"
+# scatter_color = "#B58A4A"
+
+# Curve
+plt.plot(
+    x_range,
+    y_curve,
+    color=curve_color if 'curve_color' in globals() else "#7C6A4A",
+    linewidth=2.5,
+    label="Polynomial Curve"
+)
+
+# Data points
+plt.scatter(
+    df_crop["Value_fert"],
+    df_crop["Value_yield"],
+    color=scatter_color if 'scatter_color' in globals() else "#B58A4A",
+    edgecolor="black",
+    s=85,
+    alpha=0.8,
+    label="Data Points"
+)
+
+# Optimal point
+plt.scatter(
+    x_opt,
+    y_opt,
+    color="#4A7C59",
+    s=120,
+    edgecolor="black",
+    zorder=5,
+    label=f"Optimal Point ({x_opt:.1f} kg/ha)"
+)
+
+
+plt.title(f"Model 3: Optimal Fertilizer Level for Maximum {crop} Yield", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+Add Model 3 explanation
+
+Add [Your Crop] Model section summary
+
+Section 4 [2nd Crop] Analysis
+Prepare [2nd Crop] Dataset for Modeling
+This dataset merges global [2nd Crop] yield with global fertilizer use by year. It mirrors the [Your Crop] workflow so both crops can be compared consistently.
+
+
+[ ]
+crop2 = "Your_2nd_Crop_here"
+selected_crop2 = crop_yield_only[crop_yield_only["Item"] == crop2]
+
+[ ]
+# Filter to the second selected crop
+selected_crop2 = crop_yield_only[crop_yield_only["Item"] == crop2]
+
+# Global yield for crop2
+global_crop2 = (
+    selected_crop2.groupby("Year")["Value"]
+    .mean()
+    .reset_index()
+)
+
+# Add crop name column
+global_crop2["Crop"] = crop2
+
+# Merge with global fertilizer
+df_crop2 = pd.merge(
+    global_crop2,
+    global_fert,
+    on="Year",
+    how="inner",
+    suffixes=("_yield", "_fert")
+)
+
+df_crop2.head()
+
+
+[2nd Crop] Yield Over Time
+This plot shows how global [2nd Crop] yield has changed across decades.
+
+
+[ ]
+plt.figure(figsize=(10,5))
+
+# OPTIONAL: Customize colors
+# line_color = "#d5b37e"
+# background_color = "#D5B37E"
+
+plt.plot(
+    df_crop2["Year"],
+    df_crop2["Value_yield"],
+    color=line_color if 'line_color' in globals() else "#d5b37e",
+    linewidth=2.5
+)
+
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#D5B37E"
+)
+
+plt.title(f"Global {crop2} Yield Over Time", fontweight="bold")
+plt.xlabel("Year")
+plt.ylabel("Yield (kg/ha)")
+plt.grid(True)
+plt.show()
+[2nd Crop] Model 1 Linear Regression
+This model establishes the baseline relationship between fertilizer use and [2nd Crop] yield. It measures how much yield increases for each additional kilogram of fertilizer applied.
+
+
+[ ]
+# Features and target
+X2 = df_crop2[["Value_fert"]]
+y2 = df_crop2["Value_yield"]
+
+# Train-test split
+X2_train, X2_test, y2_train, y2_test = train_test_split(
+    X2, y2, test_size=0.2, random_state=42
+)
+
+# Model
+model2_1 = LinearRegression()
+model2_1.fit(X2_train, y2_train)
+
+# Predictions
+y2_pred = model2_1.predict(X2_test)
+
+# Metrics
+rmse2_1 = np.sqrt(mean_squared_error(y2_test, y2_pred))
+r2_2_1 = r2_score(y2_test, y2_pred)
+
+print(f"{crop2} Model 1: Linear Regression")
+print("---------------------------------")
+print(f"Coefficient (slope): {model2_1.coef_[0]:.2f}")
+print(f"Intercept: {model2_1.intercept_:.2f}")
+print(f"RMSE: {rmse2_1:.2f}")
+print(f"R² Score: {r2_2_1:.3f}")
+
+[2nd Crop] Model 1 Actual vs Predicted
+This chart compares the model’s predictions to real yield values. It shows how well a simple linear model captures the fertilizer–yield relationship.
+
+
+[ ]
+plt.figure(figsize=(10,6))
+
+# OPTIONAL: Customize colors
+# scatter_color = "#d5b37e"
+# line_color = "#a68a5b"
+# background_color = "#F5F1E6"
+
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#F5F1E6"
+)
+
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(
+    y2_test,
+    y2_pred,
+    color=scatter_color if 'scatter_color' in globals() else "#d5b37e",
+    edgecolor="black",
+    s=85
+)
+
+plt.plot(
+    [y2_test.min(), y2_test.max()],
+    [y2_test.min(), y2_test.max()],
+    color=line_color if 'line_color' in globals() else "#a68a5b",
+    linewidth=2.2
+)
+
+plt.title(f"{crop2} Model 1 (Linear): Actual vs Predicted Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+Add Model 1 explanation
+
+[2nd Crop] Yield vs Fertilizer Use
+This scatter plot visualizes the relationship between fertilizer application and [2nd Crop] yield.
+
+
+[ ]
+plt.figure(figsize=(10,6))
+
+# OPTIONAL: Customize colors
+# scatter_color = "#d5b37e"
+# trendline_color = "#a68a5b"
+# background_color = "#DDEEE3"
+
+# Outer background
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#DDEEE3"
+)
+
+# Inner background
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Scatter points
+plt.scatter(
+    df_crop2["Value_fert"],
+    df_crop2["Value_yield"],
+    color=scatter_color if 'scatter_color' in globals() else "#d5b37e",
+    alpha=0.85,
+    s=85,
+    edgecolor="black",
+    linewidth=0.5,
+    label=f"{crop2} Data Points"
+)
+
+# Trendline
+x = np.linspace(df_crop2["Value_fert"].min(), df_crop2["Value_fert"].max(), 100)
+m = model2_1.coef_[0]
+b = model2_1.intercept_
+
+plt.plot(
+    x,
+    m*x + b,
+    color=trendline_color if 'trendline_color' in globals() else "#a68a5b",
+    linewidth=2.2,
+    alpha=0.8,
+    label="Trendline"
+)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+# Soft sage spines
+for spine in ax.spines.values():
+    spine.set_color("#A8C3B0")
+    spine.set_linewidth(1.2)
+
+# Title + labels
+plt.title(f"Global {crop2} Yield vs Fertilizer Use", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Yield (kg/ha)")
+
+# Soft grid
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+Add explanation
+
+[2nd Crop] Model 2 Polynomial Regression
+Polynomial regression captures the curved, diminishing‑returns pattern in [2nd Crop] yield. This model better reflects real agronomic behavior than a straight line.
+
+
+[ ]
+# Features and target
+X2 = df_crop2[["Value_fert"]]
+y2 = df_crop2["Value_yield"]
+
+# Polynomial transformation
+poly2 = PolynomialFeatures(degree=2, include_bias=False)
+X2_poly = poly2.fit_transform(X2)
+
+# Train-test split
+X2_train, X2_test, y2_train, y2_test = train_test_split(
+    X2_poly, y2, test_size=0.2, random_state=42
+)
+
+# Model
+model2_2 = LinearRegression()
+model2_2.fit(X2_train, y2_train)
+
+# Predictions
+y2_pred2 = model2_2.predict(X2_test)
+
+# Metrics
+rmse2_2 = np.sqrt(mean_squared_error(y2_test, y2_pred2))
+r2_2_2 = r2_score(y2_test, y2_pred2)
+
+print(f"{crop2} Model 2: Polynomial Regression (Degree 2)")
+print("------------------------------------------------")
+print(f"Coefficients: {model2_2.coef_}")
+print(f"Intercept: {model2_2.intercept_:.2f}")
+print(f"RMSE: {rmse2_2:.2f}")
+print(f"R² Score: {r2_2_2:.3f}")
+
+
+[2nd Crop] Model 2 Actual vs Predicted
+This plot evaluates how well the polynomial model predicts [2nd Crop] yield.
+
+
+[ ]
+plt.figure(figsize=(10,6))
+
+# OPTIONAL: Customize colors
+# scatter_color = "#d5b37e"
+# line_color = "#a68a5b"
+# background_color = "#F5F1E6"
+
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#F5F1E6"
+)
+
+ax = plt.gca()
+ax.set_facecolor("white")
+
+plt.scatter(
+    y2_test,
+    y2_pred2,
+    color=scatter_color if 'scatter_color' in globals() else "#d5b37e",
+    edgecolor="black",
+    s=85
+)
+
+plt.plot(
+    [y2_test.min(), y2_test.max()],
+    [y2_test.min(), y2_test.max()],
+    color=line_color if 'line_color' in globals() else "#a68a5b",
+    linewidth=2.2
+)
+
+plt.title(f"{crop2} Model 2 (Polynomial): Actual vs Predicted Yield", fontweight="bold")
+plt.xlabel("Actual Yield (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    ["Perfect Prediction Line", "Model Predictions"],
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+
+
+[2nd Crop] Model 3 Optimal Point Visualization
+This chart shows the polynomial curve, the real data points, and the exact optimal fertilizer level for [2nd Crop].
+
+
+[ ]
+# Smooth range of fertilizer values for plotting the polynomial curve
+x_range2 = np.linspace(
+    df_crop2["Value_fert"].min(),
+    df_crop2["Value_fert"].max(),
+    200
+)
+
+# Extract coefficients
+a2 = model2_2.coef_[1]   # quadratic term
+b2 = model2_2.coef_[0]   # linear term
+
+# Compute optimal fertilizer level (vertex of parabola)
+x_opt2 = -b2 / (2 * a2)
+
+# Predicted yield at the optimum
+x_opt_df2 = pd.DataFrame({"Value_fert": [x_opt2]})
+x_opt_poly2 = poly2.transform(x_opt_df2)
+y_opt2 = model2_2.predict(x_opt_poly2)[0]
+
+print(f"{crop2} Model 3: Optimal Fertilizer Level")
+print("-----------------------------------------")
+print("Optimal Fertilizer (kg/ha):", round(x_opt2, 2))
+print("Predicted Yield at Optimum (kg/ha):", round(y_opt2, 2))
+
+# Generate smooth curve for plotting
+x_range_df2 = pd.DataFrame({"Value_fert": x_range2})
+X_curve2 = poly2.transform(x_range_df2)
+y_curve2 = model2_2.predict(X_curve2)
+
+# Plot
+plt.figure(figsize=(10,6))
+
+# OPTIONAL: Customize colors
+# curve_color = "#a68a5b"
+# scatter_color = "#d5b37e"
+# background_color = "#F5F1E6"
+
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#F5F1E6"
+)
+
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Curve
+plt.plot(
+    x_range2,
+    y_curve2,
+    color=curve_color if 'curve_color' in globals() else "#a68a5b",
+    linewidth=2.5,
+    label="Polynomial Curve"
+)
+
+# Data points
+plt.scatter(
+    df_crop2["Value_fert"],
+    df_crop2["Value_yield"],
+    color=scatter_color if 'scatter_color' in globals() else "#d5b37e",
+    edgecolor="black",
+    s=85,
+    alpha=0.8,
+    label="Data Points"
+)
+
+# Optimal point
+plt.scatter(
+    x_opt2,
+    y_opt2,
+    color="#4A7C59",
+    s=120,
+    edgecolor="black",
+    zorder=5,
+    label=f"Optimal Point ({x_opt2:.1f} kg/ha)"
+)
+
+plt.title(f"{crop2} Model 3: Optimal Fertilizer Level for Maximum Yield", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+
+plt.legend(
+    frameon=True,
+    facecolor="white",
+    edgecolor="#A8C3B0"
+)
+
+plt.tight_layout()
+plt.show()
+Add [2nd Crop] Model 3 Interpretation
+
+Add [2nd Crop] Summary Section
+
+Add [Your Crop] vs [2nd Crop]: Fertilizer Response Comparison
+
+
+[ ]
+# Smooth fertilizer range across both datasets
+x_range = np.linspace(
+    min(df_crop["Value_fert"].min(), df_crop2["Value_fert"].min()),
+    max(df_crop["Value_fert"].max(), df_crop2["Value_fert"].max()),
+    200
+)
+
+# ---- Crop 1 curve ----
+x_range_df = pd.DataFrame({"Value_fert": x_range})
+X_curve = poly.transform(x_range_df)
+y_curve = model2.predict(X_curve)
+
+# Crop 1 optimal point
+coef_11 = model2.coef_[0]
+coef_12 = model2.coef_[1]
+x_opt = -coef_11 / (2 * coef_12)
+x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
+y_opt = model2.predict(poly.transform(x_opt_df))[0]
+
+# ---- Crop 2 curve ----
+x_range_df_2 = pd.DataFrame({"Value_fert": x_range})
+X_curve_2 = poly2.transform(x_range_df_2)
+y_curve_2 = model2_2.predict(X_curve_2)
+
+# Crop 2 optimal point
+coef_21 = model2_2.coef_[0]
+coef_22 = model2_2.coef_[1]
+x_opt_2 = -coef_21 / (2 * coef_22)
+x_opt_df_2 = pd.DataFrame({"Value_fert": [x_opt_2]})
+y_opt_2 = model2_2.predict(poly2.transform(x_opt_df_2))[0]
+
+# ---- Plot ----
+plt.figure(figsize=(12,6))
+
+plt.gcf().patch.set_facecolor(
+    background_color if 'background_color' in globals() else "#DDEEE3"
+)
+
+ax = plt.gca()
+ax.set_facecolor("white")
+
+# Crop 1 curve
+plt.plot(
+    x_range, y_curve,
+    color=curve_color if 'curve_color' in globals() else "#4A7C59",
+    linewidth=2.5,
+    label=f"{crop} Curve"
+)
+plt.scatter(
+    x_opt, y_opt,
+    color=opt_color if 'opt_color' in globals() else "#2F5D3A",
+    s=120,
+    edgecolor="black",
+    zorder=5,
+    label=f"{crop} Optimum ({x_opt:.1f} kg/ha)"
+)
+
+# Crop 2 curve
+plt.plot(
+    x_range, y_curve_2,
+    color=curve2_color if 'curve2_color' in globals() else "#a68a5b",
+    linewidth=2.5,
+    label=f"{crop2} Curve"
+)
+plt.scatter(
+    x_opt_2, y_opt_2,
+    color=opt2_color if 'opt2_color' in globals() else "#8C6E3C",
+    s=120,
+    edgecolor="black",
+    zorder=5,
+    label=f"{crop2} Optimum ({x_opt_2:.1f} kg/ha)"
+)
+
+plt.title(f"{crop} vs {crop2}: Fertilizer–Yield Response Curves", fontweight="bold")
+plt.xlabel("Fertilizer Use (kg/ha)")
+plt.ylabel("Predicted Yield (kg/ha)")
+plt.grid(True, alpha=0.3)
+plt.legend(frameon=True, facecolor="white", edgecolor="#A8C3B0")
+
+plt.tight_layout()
+plt.show()
+❓ Questions This Project Answers
+1. How does fertilizer use influence global [Your Crop] and [2nd Crop] yields?
+
+The regression models quantify how yield changes as fertilizer application increases.
+
+2. Where do diminishing returns begin for each crop?
+
+The polynomial models reveal the point where additional fertilizer produces smaller and smaller yield gains.
+
+3. What is the optimal fertilizer level that maximizes yield?
+
+Model 3 identifies the fertilizer “sweet spot” for both [Your Crop] and [2nd Crop], or, the rate that maximizes predicted yield before efficiency drops.
+
+4. Do [Your Crop] and [2nd Crop] respond differently to fertilizer?
+
+The combined comparison shows that each crop has its own curve, efficiency pattern, and optimal application rate.
+
+5. How has global fertilizer use changed over time?
+
+The EDA highlights long‑term trends, including increases, declines, and major global events that shaped fertilizer demand.
+
+6. Which nutrients (N, P, K) are used most intensively worldwide?
+
+The NPK analysis shows global nutrient imbalance, with nitrogen dominating fertilizer use.
+
+7. How do countries differ in fertilizer intensity?
+
+The Top 10 nitrogen chart identifies the highest‑use countries and highlights extreme outliers.
+
+8. What historical events explain major shifts in fertilizer use?
+
+The contextual analysis connects real‑world geopolitical and economic events to changes in global fertilizer application.
+
+9. How well can fertilizer alone predict yield?
+
+Model performance metrics (R², RMSE) show the strengths and limits of single‑feature modeling.
+
+10. What does a sustainable fertilizer strategy look like?
+
+The optimal‑point analysis demonstrates how to balance productivity with environmental responsibility.
+
+🔮 Future Work
+1. Add More Agronomic Features
+
+Incorporate additional variables such as soil type, rainfall, temperature, irrigation, and crop genetics to build a more complete predictive model.
+
+2.Explore Nutrient‑Specific Modeling (N, P, K)
+
+Instead of using total fertilizer, model how each nutrient individually affects yield and whether certain crops respond more strongly to specific nutrients.
+
+3. Regional or Country‑Level Analysis
+
+Break the global dataset into regions to understand how fertilizer efficiency varies across climates, farming systems, and economic conditions.
+
+4. Time‑Lag Effects
+
+Investigate whether fertilizer use in one year influences yield in subsequent years, especially for crops grown in rotation.
+
+5. Environmental Impact Modeling
+
+Extend the project to estimate potential nutrient runoff, greenhouse gas emissions, or soil nutrient depletion associated with different fertilizer levels.
+
+6. Compare More Crops
+
+Expand the analysis to include maize, rice, soybeans, or potatoes to build a broader understanding of fertilizer efficiency across global agriculture.
+
+7. Build an Interactive Dashboard
+
+Create a dashboard that allows users to explore fertilizer trends, yield curves, and optimal points dynamically.
+
+8. Machine Learning Extensions
+
+Experiment with more advanced models (Random Forest, Gradient Boosting, XGBoost) to capture nonlinear patterns beyond polynomial regression.
+
+Final Project Conclusion
+This project set out with a simple but important goal:
+
+understand how fertilizer influences crop yield, identify where returns begin to level off, and pinpoint the application rate that maximizes productivity without drifting into waste or environmental harm.
+
+(Add your findings here)
+This project forms a strong baseline for future work. Incorporating soil data, weather patterns, nutrient ratios, or region‑specific conditions, but even at this stage, the takeaway is clear:
+
+smarter fertilizer use isn’t just possible, it’s measurable.
+
+Finding the balance between yield and environmental impact is both a data problem and a sustainability opportunity.
