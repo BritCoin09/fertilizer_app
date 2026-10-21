@@ -13,6 +13,7 @@ from sklearn.linear_model import LinearRegression
 import kagglehub
 import faiss
 from openai import OpenAI
+import pickle
 
 # -----------------------------
 # Global styling
@@ -55,6 +56,19 @@ PROJECT_DOCS = [
 ]
 
 @st.cache_resource
+def load_faiss_index():
+    faiss_path = "vectorstore/fertilizer_index/index.faiss"
+    pkl_path = "vectorstore/fertilizer_index/index.pkl"
+
+    if not os.path.exists(faiss_path) or not os.path.exists(pkl_path):
+        return None, None
+
+    index = faiss.read_index(faiss_path)
+    with open(pkl_path, "rb") as f:
+        texts = pickle.load(f)
+    return index, texts
+
+@st.cache_resource
 def build_faiss_index(docs, _client):
     if _client is None:
         return None, None
@@ -71,6 +85,20 @@ def build_faiss_index(docs, _client):
     index.add(vectors)
 
     return index, texts
+
+# --- load-or-build logic (use this where you currently call build_faiss_index) ---
+# Try to load saved index first (works even without API key)
+faiss_index, faiss_texts = load_faiss_index()
+
+# If not found and user provided API key, build and save
+if (faiss_index is None or faiss_texts is None) and _client is not None:
+    faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, _client)
+    if faiss_index is not None and faiss_texts is not None:
+        os.makedirs("vectorstore/fertilizer_index", exist_ok=True)
+        faiss.write_index(faiss_index, "vectorstore/fertilizer_index/index.faiss")
+        with open("vectorstore/fertilizer_index/index.pkl", "wb") as f:
+            pickle.dump(faiss_texts, f)
+
 
 # -----------------------------
 # Sidebar: navigation + inputs
