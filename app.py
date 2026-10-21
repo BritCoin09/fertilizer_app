@@ -68,8 +68,6 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
 chat_query = st.sidebar.text_input("Ask a question:")
-api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
-
 # Initialize OpenAI client using the user's key ONLY
 client = None
 if api_key:
