@@ -34,47 +34,53 @@ def load_template(path="Sustainable Fertilizer Optimization.txt"):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return f.read()
-        except:
+        except Exception:
             pass
+    # Fallback if file missing or unreadable
     return (
         "Sustainable Fertilizer Optimization\n\n"
         "This project analyzes how fertilizer affects crop yields to find the optimal "
-        "application point: the level that delivers strong crop performance without "
-        "wasting money or causing nutrient pollution.\n\n"
-        "Using linear and polynomial models, the analysis:\n"
-        "- measures how yield responds to fertilizer\n"
-        "- identifies where diminishing returns begin\n"
-        "- pinpoints the “sweet spot” where productivity stays high and environmental risk stays low\n"
+        "application point (the level that delivers strong crop performance without "
+        "wasting money or causing nutrient pollution). Using linear and polynomial "
+        "models, the analysis measures how yield responds to fertilizer, identifies "
+        "where diminishing returns begin, and pinpoints the “sweet spot” where "
+        "productivity stays high and environmental risk stays low.\n"
     )
 
-def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py")):
+def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py", ".ipynb")):
     docs = []
     for dirpath, _, filenames in os.walk(root):
         for fname in filenames:
             if fname.endswith(extensions):
+                fpath = os.path.join(dirpath, fname)
                 try:
-                    with open(os.path.join(dirpath, fname), "r", encoding="utf-8") as f:
+                    with open(fpath, "r", encoding="utf-8") as f:
                         docs.append(f.read())
-                except:
+                except Exception:
+                    # Skip unreadable files
                     pass
     return docs
 
-def chunk_text(text, chunk_size=6000):
+def chunk_text(text, chunk_size=2000, overlap=200):
     chunks = []
     text = text.strip()
-    for i in range(0, len(text), chunk_size):
-        chunks.append(text[i:i + chunk_size])
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunk = text[start:end]
+        chunks.append(chunk)
+        start = end - overlap
     return chunks
 
-def chunk_texts(texts, chunk_size=6000):
+def chunk_texts(texts, chunk_size=2000, overlap=200):
     all_chunks = []
     for t in texts:
-        all_chunks.extend(chunk_text(t, chunk_size=chunk_size))
+        all_chunks.extend(chunk_text(t, chunk_size=chunk_size, overlap=overlap))
     return all_chunks
 
 TEMPLATE_TEXT = load_template()
 PROJECT_DOCS_RAW = load_all_repo_files(".")
-RAG_DOCS = chunk_texts(PROJECT_DOCS_RAW + [TEMPLATE_TEXT])
+RAG_DOCS = chunk_texts(PROJECT_DOCS_RAW + [TEMPLATE_TEXT], chunk_size=2000, overlap=200)
 
 # -----------------------------
 # RAG corpus for FAISS
@@ -87,10 +93,14 @@ def load_faiss_index():
     if not os.path.exists(faiss_path) or not os.path.exists(pkl_path):
         return None, None
 
-    index = faiss.read_index(faiss_path)
-    with open(pkl_path, "rb") as f:
-        texts = pickle.load(f)
-    return index, texts
+    try:
+        index = faiss.read_index(faiss_path)
+        with open(pkl_path, "rb") as f:
+            texts = pickle.load(f)
+        return index, texts
+    except Exception:
+        # If old index/pkl are incompatible, rebuild
+        return None, None
 
 @st.cache_resource
 def build_faiss_index(docs, _client):
@@ -98,12 +108,19 @@ def build_faiss_index(docs, _client):
         return None, None
 
     texts = [d.strip() for d in docs]
-    resp = _client.embeddings.create(
-        model="text-embedding-3-small",
-        input=texts
-    )
-    vectors = np.array([e.embedding for e in resp.data], dtype="float32")
 
+    all_vectors = []
+    batch_size = 50
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        resp = _client.embeddings.create(
+            model="text-embedding-3-small",
+            input=batch
+        )
+        batch_vecs = [e.embedding for e in resp.data]
+        all_vectors.extend(batch_vecs)
+
+    vectors = np.array(all_vectors, dtype="float32")
     dim = vectors.shape[1]
     index = faiss.IndexFlatL2(dim)
     index.add(vectors)
@@ -184,10 +201,10 @@ if _client and chat_query:
             )
             q_vec = np.array([q_emb.data[0].embedding], dtype="float32")
 
-            D, I = faiss_index.search(q_vec, k=3)
+            D, I = faiss_index.search(q_vec, k=5)
             context_chunks = [faiss_texts[i] for i in I[0]]
 
-            context = "\n\n".join(context_chunks)
+            context = "\n\n---\n\n".join(context_chunks)
 
             resp = _client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -256,7 +273,7 @@ fert_npk = fert_crop[
 fert_npk["Nutrient"] = fert_npk["Item"].map({
     "Nutrient nitrogen N (total)": "Nitrogen (N)",
     "Nutrient phosphate P2O5 (total)": "Phosphorus (P₂O₅)",
-    "Nutrient potash K₂O (total)": "Potassium (K₂O)"
+    "Nutrient potash K2O (total)": "Potassium (K₂O)"
 })
 
 fert_npk = fert_npk.dropna(subset=["Value"])
@@ -694,8 +711,8 @@ elif step == "4. Optimal Fertilizer Level":
             200
         )
 
-        a = model2.coef_[1]
-        b = model2.coef_[0]
+        a = model2.coef_[1]   # quadratic term
+        b = model2.coef_[0]   # linear term
         x_opt = -b / (2 * a)
 
         x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
@@ -876,6 +893,7 @@ that maximizes predicted yield while avoiding unnecessary input use.
         file_name="fertilizer_optimization_summary.txt",
         mime="text/plain"
     )
+
 
 
 
