@@ -48,14 +48,17 @@ Using linear and polynomial models, the analysis:
 # -----------------------------
 # RAG corpus for FAISS
 # -----------------------------
-def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py", ".ipynb")):
+def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py")):
     docs = []
     for dirpath, _, filenames in os.walk(root):
         for fname in filenames:
             if fname.endswith(extensions):
                 try:
                     with open(os.path.join(dirpath, fname), "r", encoding="utf-8") as f:
-                        docs.append(f.read())
+                        text = f.read().strip()
+                        # Chunk long files into safe pieces
+                        chunks = [text[i:i+6000] for i in range(0, len(text), 6000)]
+                        docs.extend(chunks)
                 except:
                     pass
     return docs
