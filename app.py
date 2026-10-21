@@ -314,7 +314,7 @@ Using linear and polynomial models, the analysis:
         st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
 
         if chat_query and not _client:
-            pass
+            st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
 
 # Section 2: Data & EDA
 # -----------------------------
