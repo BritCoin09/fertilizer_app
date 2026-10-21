@@ -313,14 +313,9 @@ Using linear and polynomial models, the analysis:
         st.markdown("### 🤖 Assistant")
         st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
 
-        if client and chat_query:
-            with st.spinner("Thinking..."):
-                resp = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[{"role": "user", "content": chat_query}],
-                    temperature=0
-                )
-                st.markdown(resp.choices[0].message.content.strip())
+        if chat_query and not client:
+    st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
+
         elif chat_query and not client:
             st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
 
