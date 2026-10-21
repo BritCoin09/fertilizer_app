@@ -26,6 +26,53 @@ st.set_page_config(
 )
 
 # -----------------------------
+# RAG corpus for FAISS
+# -----------------------------
+PROJECT_DOCS = [
+    """
+    Sustainable Fertilizer Optimization project by Britny Chambers.
+    It uses FAOSTAT fertilizer and crop yield data to model how fertilizer use (kg/ha)
+    affects yield (kg/ha) for crops like Wheat and Maize. It fits linear and polynomial
+    regression models and finds an optimal fertilizer level where yield is high but
+    environmental risk and waste are minimized.
+    """,
+    """
+    The project includes global NPK fertilizer trends, distribution plots, and correlation
+    analysis between fertilizer use and yield. It highlights nitrogen-heavy application
+    patterns and the risk of over-fertilization for soil health and water quality.
+    """,
+    """
+    Model 1: Linear regression between fertilizer use and yield.
+    Model 2: Polynomial regression (degree 2) to capture diminishing returns.
+    Model 3: Uses the quadratic coefficients to compute the optimal fertilizer level
+    at -b/(2a), then predicts yield at that point.
+    """,
+    """
+    Second crop analysis compares how another crop (e.g., Maize) responds to fertilizer
+    versus the main crop. The summary section explains how farmers can use these insights
+    to avoid over-application and focus on sustainable fertilizer strategies.
+    """
+]
+
+@st.cache_resource
+def build_faiss_index(docs, client):
+    if client is None:
+        return None, None
+
+    texts = [d.strip() for d in docs]
+    resp = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts
+    )
+    vectors = np.array([e.embedding for e in resp.data], dtype="float32")
+
+    dim = vectors.shape[1]
+    index = faiss.IndexFlatL2(dim)
+    index.add(vectors)
+
+    return index, texts
+
+# -----------------------------
 # Sidebar: navigation + inputs
 # -----------------------------
 st.sidebar.title("🌱 Navigation")
@@ -77,19 +124,51 @@ if api_key:
         st.sidebar.error("Your API key could not be initialized. Double‑check it.")
         client = None
 
-# Handle chatbot query
+# Build FAISS index once (cached)
+faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, client)
+
+
+# Handle chatbot query with RAG
 if client and chat_query:
-    try:
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": chat_query}],
-            temperature=0
-        )
-        st.sidebar.write(resp.choices[0].message.content.strip())
-    except Exception:
-        st.sidebar.error("Authentication failed. Your API key is invalid or missing.")
+    if faiss_index is None:
+        st.sidebar.error("RAG index is not available. Check your API key.")
+    else:
+        try:
+            # Embed the question
+            q_emb = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=[chat_query]
+            )
+            q_vec = np.array([q_emb.data[0].embedding], dtype="float32")
+
+            # Search FAISS
+            D, I = faiss_index.search(q_vec, k=3)
+            context_chunks = [faiss_texts[i] for i in I[0]]
+
+            context = "\n\n".join(context_chunks)
+
+            resp = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are an assistant for Britny Chambers' "
+                            "Sustainable Fertilizer Optimization project. "
+                            "Use the following project context when answering:\n\n"
+                            + context
+                        ),
+                    },
+                    {"role": "user", "content": chat_query},
+                ],
+                temperature=0
+            )
+            st.sidebar.write(resp.choices[0].message.content.strip())
+        except Exception:
+            st.sidebar.error("Authentication or RAG retrieval failed. Check your API key.")
 elif chat_query:
     st.sidebar.info("Enter your OpenAI API key to enable the assistant.")
+
 
 
 # -----------------------------
