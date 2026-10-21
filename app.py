@@ -61,7 +61,7 @@ if api_key:
 # -----------------------------
 # RAG setup — SAFE CHUNKING
 # -----------------------------
-def chunk_text(text, chunk_size=1000, overlap=100):
+def chunk_text(text, chunk_size=300, overlap=50):
     chunks = []
     start = 0
     while start < len(text):
@@ -70,7 +70,8 @@ def chunk_text(text, chunk_size=1000, overlap=100):
         start = end - overlap
     return chunks
 
-RAG_DOCS = chunk_text(TEMPLATE_TEXT, chunk_size=1000, overlap=100)
+
+RAG_DOCS = chunk_text(TEMPLATE_TEXT, chunk_size=300, overlap=100)
 
 @st.cache_resource
 def build_faiss_index(docs, client):
