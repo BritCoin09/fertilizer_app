@@ -29,31 +29,19 @@ st.set_page_config(
 # -----------------------------
 # RAG corpus for FAISS
 # -----------------------------
-PROJECT_DOCS = [
-    """
-    Sustainable Fertilizer Optimization project by Britny Chambers.
-    It uses FAOSTAT fertilizer and crop yield data to model how fertilizer use (kg/ha)
-    affects yield (kg/ha) for crops like Wheat and Maize. It fits linear and polynomial
-    regression models and finds an optimal fertilizer level where yield is high but
-    environmental risk and waste are minimized.
-    """,
-    """
-    The project includes global NPK fertilizer trends, distribution plots, and correlation
-    analysis between fertilizer use and yield. It highlights nitrogen-heavy application
-    patterns and the risk of over-fertilization for soil health and water quality.
-    """,
-    """
-    Model 1: Linear regression between fertilizer use and yield.
-    Model 2: Polynomial regression (degree 2) to capture diminishing returns.
-    Model 3: Uses the quadratic coefficients to compute the optimal fertilizer level
-    at -b/(2a), then predicts yield at that point.
-    """,
-    """
-    Second crop analysis compares how another crop (e.g., Maize) responds to fertilizer
-    versus the main crop. The summary section explains how farmers can use these insights
-    to avoid over-application and focus on sustainable fertilizer strategies.
-    """
-]
+def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py", ".ipynb")):
+    docs = []
+    for dirpath, _, filenames in os.walk(root):
+        for fname in filenames:
+            if fname.endswith(extensions):
+                try:
+                    with open(os.path.join(dirpath, fname), "r", encoding="utf-8") as f:
+                        docs.append(f.read())
+                except:
+                    pass
+    return docs
+
+PROJECT_DOCS = load_all_repo_files("fertilizer_app")
 
 @st.cache_resource
 def load_faiss_index():
@@ -87,19 +75,6 @@ def build_faiss_index(docs, _client):
     return index, texts
 
 # --- load-or-build logic (use this where you currently call build_faiss_index) ---
-# Try to load saved index first (works even without API key)
-faiss_index, faiss_texts = load_faiss_index()
-
-# If not found and user provided API key, build and save
-if (faiss_index is None or faiss_texts is None) and _client is not None:
-    faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, _client)
-    if faiss_index is not None and faiss_texts is not None:
-        os.makedirs("vectorstore/fertilizer_index", exist_ok=True)
-        faiss.write_index(faiss_index, "vectorstore/fertilizer_index/index.faiss")
-        with open("vectorstore/fertilizer_index/index.pkl", "wb") as f:
-            pickle.dump(faiss_texts, f)
-
-
 # -----------------------------
 # Sidebar: navigation + inputs
 # -----------------------------
@@ -136,14 +111,6 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password").strip()
 
-# -----------------------------
-# Chatbot (simple RAG-style)
-# -----------------------------
-st.sidebar.markdown("---")
-st.sidebar.subheader("🤖 Fertilizer Assistant")
-
-chat_query = st.sidebar.text_input("Ask a question:")
-# Initialize OpenAI client using the user's key ONLY
 _client = None
 if api_key:
     try:
@@ -151,10 +118,25 @@ if api_key:
     except Exception:
         st.sidebar.error("Your API key could not be initialized. Double‑check it.")
         _client = None
+        
+faiss_index, faiss_texts = load_faiss_index()
 
-# Build FAISS index once (cached)
-faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, _client)
+# If not found and user provided API key, build and save
+if (faiss_index is None or faiss_texts is None) and _client is not None:
+    faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, _client)
+    if faiss_index is not None and faiss_texts is not None:
+        os.makedirs("vectorstore/fertilizer_index", exist_ok=True)
+        faiss.write_index(faiss_index, "vectorstore/fertilizer_index/index.faiss")
+        with open("vectorstore/fertilizer_index/index.pkl", "wb") as f:
+            pickle.dump(faiss_texts, f)
 
+# -----------------------------
+# Chatbot (simple RAG-style)
+# -----------------------------
+st.sidebar.markdown("---")
+st.sidebar.subheader("🤖 Fertilizer Assistant")
+
+chat_query = st.sidebar.text_input("Ask a question:")
 
 # Handle chatbot query with RAG
 if _client and chat_query:
