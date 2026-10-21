@@ -55,12 +55,12 @@ PROJECT_DOCS = [
 ]
 
 @st.cache_resource
-def build_faiss_index(docs, client):
-    if client is None:
+def build_faiss_index(docs, _client):
+    if _client is None:
         return None, None
 
     texts = [d.strip() for d in docs]
-    resp = client.embeddings.create(
+    resp = _client.embeddings.create(
         model="text-embedding-3-small",
         input=texts
     )
@@ -116,26 +116,26 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 
 chat_query = st.sidebar.text_input("Ask a question:")
 # Initialize OpenAI client using the user's key ONLY
-client = None
+_client = None
 if api_key:
     try:
-        client = OpenAI(api_key=api_key.strip())
+        _client = OpenAI(api_key=api_key.strip())
     except Exception:
         st.sidebar.error("Your API key could not be initialized. Double‑check it.")
-        client = None
+        _client = None
 
 # Build FAISS index once (cached)
-faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, client)
+faiss_index, faiss_texts = build_faiss_index(PROJECT_DOCS, _client)
 
 
 # Handle chatbot query with RAG
-if client and chat_query:
+if _client and chat_query:
     if faiss_index is None:
         st.sidebar.error("RAG index is not available. Check your API key.")
     else:
         try:
             # Embed the question
-            q_emb = client.embeddings.create(
+            q_emb = _client.embeddings.create(
                 model="text-embedding-3-small",
                 input=[chat_query]
             )
@@ -147,7 +147,7 @@ if client and chat_query:
 
             context = "\n\n".join(context_chunks)
 
-            resp = client.chat.completions.create(
+            resp = _client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
@@ -309,17 +309,13 @@ Using linear and polynomial models, the analysis:
         if crop2:
             st.markdown(f"**Second crop:** `{crop2}`")
 
-    with col2:
-        st.markdown("### 🤖 Assistant")
-        st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
+        with col2:
+            st.markdown("### 🤖 Assistant")
+            st.markdown("Ask questions about fertilizer, crops, or the analysis in the sidebar.")
 
-        if chat_query and not client:
-    st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
+            if chat_query and not _client:
+                st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
 
-        elif chat_query and not client:
-            st.info("Add your OpenAI API key in the sidebar to enable the assistant.")
-
-# -----------------------------
 # Section 2: Data & EDA
 # -----------------------------
 elif step == "2. Data & EDA":
