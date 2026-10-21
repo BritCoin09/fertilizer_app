@@ -155,7 +155,7 @@ crop = st.sidebar.text_input(
 
 crop2 = st.sidebar.text_input(
     "Second crop name (optional)",
-    value="Maize"
+    value="Barley"
 )
 
 st.sidebar.markdown("---")
