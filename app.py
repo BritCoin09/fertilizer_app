@@ -59,9 +59,9 @@ if api_key:
         _client = None
 
 # -----------------------------
-# RAG setup
+# RAG setup — SAFE CHUNKING
 # -----------------------------
-def chunk_text(text, chunk_size=2000, overlap=200):
+def chunk_text(text, chunk_size=1000, overlap=100):
     chunks = []
     start = 0
     while start < len(text):
@@ -70,7 +70,7 @@ def chunk_text(text, chunk_size=2000, overlap=200):
         start = end - overlap
     return chunks
 
-RAG_DOCS = chunk_text(TEMPLATE_TEXT)
+RAG_DOCS = chunk_text(TEMPLATE_TEXT, chunk_size=1000, overlap=100)
 
 @st.cache_resource
 def build_faiss_index(docs, client):
@@ -99,7 +99,7 @@ def build_faiss_index(docs, client):
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 
 # -----------------------------
-# Chatbot
+# Chatbot (RAG)
 # -----------------------------
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
@@ -335,6 +335,10 @@ else:
     st.subheader(f"Global {crop} Yield Over Time")
     fig = plt.figure(figsize=(10, 5))
     plt.plot(df_crop_main["Year"], df_crop_main["Value_yield"], linewidth=2.5)
+    plt.title(f"Global {crop} Yield Over Time", fontweight="bold")
+    plt.xlabel("Year")
+    plt.ylabel("Yield (kg/ha)")
+    plt.grid(True)
     st.pyplot(fig)
 
     # Yield vs Fertilizer
@@ -347,6 +351,10 @@ else:
         edgecolor="black",
         s=85
     )
+    plt.title(f"{crop} Yield vs Fertilizer Use", fontweight="bold")
+    plt.xlabel("Fertilizer Use (kg/ha)")
+    plt.ylabel("Yield (kg/ha)")
+    plt.grid(True, alpha=0.3)
     st.pyplot(fig2)
 
     # Correlation
@@ -368,9 +376,21 @@ else:
 
     st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
     st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
+    st.markdown(f"- **RMSE:** {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
+    st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
 
     fig3 = plt.figure(figsize=(10, 6))
     plt.scatter(y_test, y_pred, color="#B58A4A", edgecolor="black", s=85)
+    plt.plot(
+        [y_test.min(), y_test.max()],
+        [y_test.min(), y_test.max()],
+        color="#7C6A4A",
+        linewidth=2.2
+    )
+    plt.title(f"Model 1: Actual vs Predicted {crop} Yield", fontweight="bold")
+    plt.xlabel("Actual Yield (kg/ha)")
+    plt.ylabel("Predicted Yield (kg/ha)")
+    plt.grid(True, alpha=0.3)
     st.pyplot(fig3)
 
 # -----------------------------
@@ -392,17 +412,86 @@ if df_crop_main is not None:
     b = model2.coef_[0]
     x_opt = -b / (2 * a)
 
+    x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
+    x_opt_poly = poly.transform(x_opt_df)
+    y_opt = model2.predict(x_opt_poly)[0]
+
     st.markdown(f"**Optimal Fertilizer (kg/ha):** `{x_opt:.2f}`")
+    st.markdown(f"**Predicted Yield at Optimum (kg/ha):** `{y_opt:.2f}`")
+
+    # Curve plot
+    x_range = np.linspace(
+        df_crop_main["Value_fert"].min(),
+        df_crop_main["Value_fert"].max(),
+        200
+    )
+    x_range_df = pd.DataFrame({"Value_fert": x_range})
+    X_curve = poly.transform(x_range_df)
+    y_curve = model2.predict(X_curve)
+
+    fig_opt = plt.figure(figsize=(10, 6))
+    plt.plot(x_range, y_curve, color="#7C6A4A", linewidth=2.5)
+    plt.scatter(
+        df_crop_main["Value_fert"],
+        df_crop_main["Value_yield"],
+        color="#B58A4A",
+        edgecolor="black",
+        s=85,
+        alpha=0.8
+    )
+    plt.scatter(
+        x_opt,
+        y_opt,
+        color="#4A7C59",
+        s=120,
+        edgecolor="black",
+        zorder=5
+    )
+    plt.title(f"Model 3: Optimal Fertilizer Level for Maximum {crop} Yield", fontweight="bold")
+    plt.xlabel("Fertilizer Use (kg/ha)")
+    plt.ylabel("Predicted Yield (kg/ha)")
+    plt.grid(True, alpha=0.3)
+    st.pyplot(fig_opt)
 
 # -----------------------------
 # SECOND CROP ANALYSIS
 # -----------------------------
 st.header(f"🌾 Second Crop Analysis: {crop2}")
 
-if df_crop_second is not None:
-    fig = plt.figure(figsize=(10, 5))
-    plt.plot(df_crop_second["Year"], df_crop_second["Value_yield"], linewidth=2.5)
-    st.pyplot(fig)
+if df_crop_second is None:
+    st.info("Enter a valid second crop name to enable this section.")
+else:
+    st.subheader(f"Global {crop2} Yield Over Time")
+
+    fig_sc = plt.figure(figsize=(10, 5))
+    plt.plot(
+        df_crop_second["Year"],
+        df_crop_second["Value_yield"],
+        color="#d5b37e",
+        linewidth=2.5
+    )
+    plt.title(f"Global {crop2} Yield Over Time", fontweight="bold")
+    plt.xlabel("Year")
+    plt.ylabel("Yield (kg/ha)")
+    plt.grid(True)
+    st.pyplot(fig_sc)
+
+    st.subheader(f"{crop2} Yield vs Fertilizer Use")
+
+    fig_sc2 = plt.figure(figsize=(10, 6))
+    plt.scatter(
+        df_crop_second["Value_fert"],
+        df_crop_second["Value_yield"],
+        color="#B58A4A",
+        edgecolor="black",
+        s=85,
+        alpha=0.85
+    )
+    plt.title(f"{crop2} Yield vs Fertilizer Use", fontweight="bold")
+    plt.xlabel("Fertilizer Use (kg/ha)")
+    plt.ylabel("Yield (kg/ha)")
+    plt.grid(True, alpha=0.3)
+    st.pyplot(fig_sc2)
 
 # -----------------------------
 # SUMMARY
@@ -427,4 +516,5 @@ st.download_button(
     file_name="fertilizer_optimization_summary.txt",
     mime="text/plain"
 )
+
 
