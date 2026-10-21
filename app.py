@@ -60,7 +60,7 @@ def load_all_repo_files(root=".", extensions=(".txt", ".md", ".py", ".ipynb")):
                     pass
     return docs
 
-PROJECT_DOCS = load_all_repo_files("fertilizer_app")
+PROJECT_DOCS = load_all_repo_files(".")
 
 @st.cache_resource
 def load_faiss_index():
