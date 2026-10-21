@@ -104,7 +104,9 @@ faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
-chat_query = st.sidebar.text_input("Ask a question:")
+chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
+st.session_state["chat_input"] = chat_query
+
 
 if _client and chat_query:
     if faiss_index is None:
@@ -112,8 +114,8 @@ if _client and chat_query:
     else:
         q_emb = _client.embeddings.create(
             model="text-embedding-3-small",
-            input=[chat_query]
-        ).data[0].embedding
+            input=[chat_query.strip()]
+        )
 
         q_vec = np.array([q_emb], dtype="float32")
         D, I = faiss_index.search(q_vec, k=5)
