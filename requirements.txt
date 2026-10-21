@@ -1,10 +1,9 @@
-matplotlib
-seaborn
-pandas
-numpy
-scikit-learn
-kagglehub
-faiss-cpu
-openai
 streamlit
+openai
+faiss-cpu
+numpy
+pandas
+python-dotenv
+kagglehub
+
 
