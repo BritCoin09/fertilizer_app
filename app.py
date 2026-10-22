@@ -80,8 +80,8 @@ def build_faiss_index(docs, client):
     texts = [d.strip() for d in docs]
     all_vectors = []
 
-    for i in range(0, len(texts), 50):
-        batch = texts[i:i+50]
+    for i in range(0, len(texts), 1):
+        batch = [texts[i]]
         resp = client.embeddings.create(
             model="text-embedding-3-small",
             input=batch
