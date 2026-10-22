@@ -36,6 +36,10 @@ def load_template(path="full_template_text.txt"):
     return "Template file missing."
 
 TEMPLATE_TEXT = load_template()
+# Hard cap the template so it can never blow up embeddings
+MAX_TEMPLATE_CHARS = 20000  # adjust if you want
+TEMPLATE_TEXT = TEMPLATE_TEXT[:MAX_TEMPLATE_CHARS]
+
 
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
