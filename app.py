@@ -101,9 +101,6 @@ faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
-context = "\n\n---\n\n".join([faiss_texts[i] for i in I[0]])
-context = context[:6000]  # safety cap
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
