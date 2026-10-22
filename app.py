@@ -65,32 +65,42 @@ if api_key:
 # -----------------------------
 # RAG setup — SAFE CHUNKING
 # -----------------------------
-def chunk_text(text, chunk_size=800, overlap=100):
-    chunks = []
-    start = 0
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-    return chunks
+# -----------------------------
+# RAG setup — SAFE & SIMPLE
+# -----------------------------
+def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
+    """
+    Hard-split the template into fixed-size character chunks.
+    No overlap, no sliding window, no surprises.
+    """
+    text = text or ""
+    text = text[:30000]  # hard cap the entire template to avoid huge inputs
+    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-RAG_DOCS = chunk_text(TEMPLATE_TEXT, chunk_size=800, overlap=100)
+
+RAG_DOCS = chunk_text(TEMPLATE_TEXT, max_chars=1000)
+
 
 @st.cache_resource
-def build_faiss_index(docs, client):
-    if client is None:
+def build_faiss_index(docs: list[str], client: OpenAI):
+    """
+    Build a FAISS index over template chunks.
+    Each chunk is embedded individually to guarantee we stay under token limits.
+    """
+    if client is None or not docs:
         return None, None
 
-    texts = [d.strip() for d in docs]
+    texts = [d.strip() for d in docs if d.strip()]
     all_vectors = []
 
-    for i in range(0, len(texts), 1):
-        batch = [texts[i]]
+    for t in texts:
+        # extra safety: truncate each chunk before embedding
+        safe_t = t[:2000]
         resp = client.embeddings.create(
             model="text-embedding-3-small",
-            input=batch
+            input=[safe_t]
         )
-        all_vectors.extend([e.embedding for e in resp.data])
+        all_vectors.append(resp.data[0].embedding)
 
     vectors = np.array(all_vectors, dtype="float32")
     dim = vectors.shape[1]
@@ -99,6 +109,7 @@ def build_faiss_index(docs, client):
     index.add(vectors)
 
     return index, texts
+
 
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 
@@ -111,31 +122,42 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 st.session_state["chat_input"] = chat_query
 
-
 if _client and chat_query:
     if faiss_index is None:
         st.sidebar.error("RAG index unavailable.")
     else:
+        # embed the (short) user query
+        q_text = chat_query.strip()[:500]
         q_emb = _client.embeddings.create(
             model="text-embedding-3-small",
-            input=[chat_query.strip()[:500]]
+            input=[q_text]
         ).data[0].embedding
-
 
         q_vec = np.array([q_emb], dtype="float32")
         D, I = faiss_index.search(q_vec, k=5)
 
-        context = "\n\n---\n\n".join([faiss_texts[i] for i in I[0]])
+        # build a compact context from the top chunks
+        retrieved_chunks = [faiss_texts[i] for i in I[0]]
+        context = "\n\n---\n\n".join(retrieved_chunks)
+        context = context[:6000]  # final safety cap
 
         resp = _client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": context},
-                {"role": "user", "content": chat_query}
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a sustainable fertilizer optimization assistant. "
+                        "Use the following notebook context to answer concisely:\n\n"
+                        f"{context}"
+                    ),
+                },
+                {"role": "user", "content": chat_query},
             ],
-            temperature=0
+            temperature=0,
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
+
 
 # -----------------------------
 # Load data
