@@ -30,7 +30,6 @@ st.set_page_config(
     layout="wide"
 )
 
-
 # -----------------------------
 # Load full notebook template
 # -----------------------------
@@ -46,14 +45,10 @@ TEMPLATE_TEXT = load_template()
 MAX_TEMPLATE_CHARS = 20000  # adjust if you want
 TEMPLATE_TEXT = TEMPLATE_TEXT[:MAX_TEMPLATE_CHARS]
 
-
-
-
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
 # -----------------------------
 st.sidebar.subheader("✏️ Crop Selection")
-
 
 crop = st.sidebar.text_input("Main crop name", value="Wheat")
 crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
@@ -90,21 +85,15 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
     text = text[:30000]  # hard cap the entire template to avoid huge inputs
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-
-
-
 RAG_DOCS = chunk_text(TEMPLATE_TEXT, max_chars=1000)
 
-
-
-
 @st.cache_resource
-def build_faiss_index(docs: list[str], client: OpenAI):
+def build_faiss_index(docs: list[str], _client: OpenAI):
     """
     Build a FAISS index over template chunks.
     Each chunk is embedded individually to guarantee we stay under token limits.
     """
-    if client is None or not docs:
+    if _client is None or not docs:
         return None, None
 
 
@@ -115,7 +104,7 @@ def build_faiss_index(docs: list[str], client: OpenAI):
     for t in texts:
         # extra safety: truncate each chunk before embedding
         safe_t = t[:2000]
-        resp = client.embeddings.create(
+        resp = _client.embeddings.create(
             model="text-embedding-3-small",
             input=[safe_t]
         )
@@ -129,14 +118,9 @@ def build_faiss_index(docs: list[str], client: OpenAI):
     index = faiss.IndexFlatL2(dim)
     index.add(vectors)
 
-
     return index, texts
 
-
-
-
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
-
 
 # -----------------------------
 # Chatbot (RAG)
@@ -161,10 +145,8 @@ if _client and chat_query:
             input=[q_text]
         ).data[0].embedding
 
-
         q_vec = np.array([q_emb], dtype="float32")
         D, I = faiss_index.search(q_vec, k=5)
-
 
         # build a compact context from the top chunks
         retrieved_chunks = [faiss_texts[i] for i in I[0]]
@@ -189,9 +171,6 @@ if _client and chat_query:
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
 
-
-
-
 # -----------------------------
 # Load data
 # -----------------------------
@@ -207,16 +186,13 @@ def load_fertilizer_data():
         encoding="latin1"
     )
 
-
 @st.cache_data
 def load_crop_yield_data():
     crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
     return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
 
-
 fert = load_fertilizer_data()
 df_yield = load_crop_yield_data()
-
 
 # -----------------------------
 # Prepare fertilizer data
