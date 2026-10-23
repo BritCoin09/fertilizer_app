@@ -26,6 +26,97 @@ st.set_page_config(
     layout="wide"
 )
 
+# ==================================================
+# JUPYTER NOTEBOOK STYLING
+# ==================================================
+
+st.markdown("""
+<style>
+
+/* Notebook background */
+.main {
+    background-color: #f7f7f7;
+}
+
+/* Generic notebook cell */
+.notebook-cell {
+    background-color: white;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Markdown cells */
+.markdown-cell {
+    border-left: 6px solid #2E7D32;
+}
+
+/* Code cells */
+.code-cell {
+    border-left: 6px solid #F9A825;
+}
+
+/* Output cells */
+.output-cell {
+    border-left: 6px solid #1E88E5;
+}
+
+/* Cell labels */
+.cell-label {
+    color: #666;
+    font-family: monospace;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Notebook headings */
+h1, h2, h3 {
+    font-weight: 700;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ==================================================
+# NOTEBOOK CELL HELPERS
+# ==================================================
+
+def markdown_cell(title, level=2):
+    st.markdown(
+        f"""
+        <div class="notebook-cell markdown-cell">
+            <div class="cell-label">Markdown Cell</div>
+            <h{level}>{title}</h{level}>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+def code_cell(code_text):
+    st.markdown(
+        """
+        <div class="notebook-cell code-cell">
+            <div class="cell-label">Code Cell</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.code(code_text, language="python")
+
+
+def output_cell():
+    st.markdown(
+        """
+        <div class="notebook-cell output-cell">
+            <div class="cell-label">Output Cell</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 # -----------------------------
 # Load full notebook template
 # -----------------------------
@@ -272,25 +363,41 @@ df_crop_second = build_crop_df(crop2) if crop2 else None
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-st.title("🌍 Sustainable Fertilizer Optimization")
+markdown_cell("🌍 Sustainable Fertilizer Optimization", level=1)
 
-st.markdown("### 📘 Full Notebook (Editable)")
-st.text_area("Notebook Text", value=TEMPLATE_TEXT, height=1200)
+st.markdown(
+    """
+    <div class="notebook-cell markdown-cell">
+        <div class="cell-label">Markdown Cell</div>
+        <h3>📘 Full Notebook (Editable)</h3>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.text_area(
+    "Notebook Text",
+    value=TEMPLATE_TEXT,
+    height=1200
+)
 
 st.markdown("---")
 
 # -----------------------------
 # CODE BLOCKS (Colab style)
 # -----------------------------
-st.markdown("### 🧪 Code Used in This Notebook")
+markdown_cell("🧪 Code Used in This Notebook", level=3)
 
-st.code("""
+code_cell("""
 # Example: Melt crop yield data
+
 df_long = df_yield.melt(
     id_vars=[
-        "Area Code", "Area Code (M49)", "Area",
-        "Item Code", "Item Code (CPC)", "Item",
-        "Element Code", "Element", "Unit"
+        "Area Code",
+        "Area Code (M49)",
+        "Area",
+        "Item Code",
+        "Item"
     ],
     var_name="Year",
     value_name="Value"
@@ -300,7 +407,7 @@ df_long = df_yield.melt(
 # -----------------------------
 # EDA SECTION
 # -----------------------------
-st.header("📊 Data & Exploratory Analysis")
+markdown_cell("📊 Data & Exploratory Analysis")
 
 # Global NPK Fertilizer Trends
 st.subheader("Global NPK Fertilizer Trends")
@@ -322,22 +429,19 @@ ax.grid(True)
 st.pyplot(fig)
 
 # Distribution of NPK Fertilizer Use
-st.subheader("Distribution of NPK Fertilizer Use")
+markdown_cell("Global NPK Fertilizer Trends", level=3)
 
-fig2 = plt.figure(figsize=(10, 6))
-sns.boxplot(
+code_cell("""
+sns.lineplot(
     data=fert_npk_clean,
-    x="Nutrient",
+    x="Year",
     y="Value",
-    hue="Nutrient",
-    palette={
-        "Nitrogen (N)": "#2E7D32",
-        "Phosphorus (P₂O₅)": "#8D6E63",
-        "Potassium (K₂O)": "#F9A825"
-    },
-    legend=False
+    hue="Nutrient"
 )
-st.pyplot(fig2)
+""")
+
+output_cell()
+st.pyplot(fig)
 
 # Global Fertilizer Use Over Time
 st.subheader("Global Fertilizer Use Over Time")
@@ -355,7 +459,9 @@ st.pyplot(fig3)
 # -----------------------------
 # CROP MODELING
 # -----------------------------
-st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
+markdown_cell(
+    f"🌾 Modeling: {crop} Yield vs Fertilizer"
+)
 
 if df_crop_main is None:
     st.error(f"Could not find crop `{crop}` in FAOSTAT yield data.")
@@ -399,6 +505,22 @@ else:
         X, y, test_size=0.2, random_state=42
     )
 
+    code_cell("""
+X = df_crop_main[['Value_fert']]
+y = df_crop_main['Value_yield']
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+""")
+
+output_cell()
+
+st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
+st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
+st.markdown(f"- **RMSE:** {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
+st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -425,7 +547,9 @@ else:
 # -----------------------------
 # OPTIMAL FERTILIZER
 # -----------------------------
-st.header(f"🎯 Optimal Fertilizer Level for {crop}")
+markdown_cell(
+    f"🎯 Optimal Fertilizer Level for {crop}"
+)
 
 if df_crop_main is not None:
     X = df_crop_main[["Value_fert"]]
@@ -447,6 +571,22 @@ if df_crop_main is not None:
 
     st.markdown(f"**Optimal Fertilizer (kg/ha):** `{x_opt:.2f}`")
     st.markdown(f"**Predicted Yield at Optimum (kg/ha):** `{y_opt:.2f}`")
+
+code_cell("""
+poly = PolynomialFeatures(
+    degree=2,
+    include_bias=False
+)
+
+X_poly = poly.fit_transform(X)
+
+model2.fit(X_poly, y)
+
+x_opt = -b / (2 * a)
+""")
+
+output_cell()
+st.pyplot(fig_opt)
 
     # Curve plot
     x_range = np.linspace(
@@ -525,7 +665,9 @@ else:
 # -----------------------------
 # SUMMARY
 # -----------------------------
-st.header("📜 Summary & Export")
+markdown_cell(
+    "📜 Summary & Export"
+)
 
 summary_text = f"""
 Sustainable Fertilizer Optimization Summary
