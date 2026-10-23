@@ -5,15 +5,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
+
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 
+
 import kagglehub
 import faiss
 from openai import OpenAI
 import pickle
+
 
 # -----------------------------
 # Global styling
@@ -21,102 +24,13 @@ import pickle
 plt.rcParams["figure.figsize"] = (10, 6)
 sns.set_style("ticks")
 
+
 st.set_page_config(
     page_title="Sustainable Fertilizer Optimization",
     layout="wide"
 )
 
-# ==================================================
-# JUPYTER NOTEBOOK STYLING
-# ==================================================
 
-st.markdown("""
-<style>
-
-/* Notebook background */
-.main {
-    background-color: #f7f7f7;
-}
-
-/* Generic notebook cell */
-.notebook-cell {
-    background-color: white;
-    border: 1px solid #d0d7de;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-
-/* Markdown cells */
-.markdown-cell {
-    border-left: 6px solid #2E7D32;
-}
-
-/* Code cells */
-.code-cell {
-    border-left: 6px solid #F9A825;
-}
-
-/* Output cells */
-.output-cell {
-    border-left: 6px solid #1E88E5;
-}
-
-/* Cell labels */
-.cell-label {
-    color: #666;
-    font-family: monospace;
-    font-size: 0.8rem;
-    margin-bottom: 0.5rem;
-}
-
-/* Notebook headings */
-h1, h2, h3 {
-    font-weight: 700;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# ==================================================
-# NOTEBOOK CELL HELPERS
-# ==================================================
-
-def markdown_cell(title, level=2):
-    st.markdown(
-        f"""
-        <div class="notebook-cell markdown-cell">
-            <div class="cell-label">Markdown Cell</div>
-            <h{level}>{title}</h{level}>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def code_cell(code_text):
-    st.markdown(
-        """
-        <div class="notebook-cell code-cell">
-            <div class="cell-label">Code Cell</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.code(code_text, language="python")
-
-
-def output_cell():
-    st.markdown(
-        """
-        <div class="notebook-cell output-cell">
-            <div class="cell-label">Output Cell</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 # -----------------------------
 # Load full notebook template
 # -----------------------------
@@ -126,10 +40,13 @@ def load_template(path="full_template_text.txt"):
             return f.read()
     return "Template file missing."
 
+
 TEMPLATE_TEXT = load_template()
 # Hard cap the template so it can never blow up embeddings
 MAX_TEMPLATE_CHARS = 20000  # adjust if you want
 TEMPLATE_TEXT = TEMPLATE_TEXT[:MAX_TEMPLATE_CHARS]
+
+
 
 
 # -----------------------------
@@ -137,13 +54,17 @@ TEMPLATE_TEXT = TEMPLATE_TEXT[:MAX_TEMPLATE_CHARS]
 # -----------------------------
 st.sidebar.subheader("✏️ Crop Selection")
 
+
 crop = st.sidebar.text_input("Main crop name", value="Wheat")
 crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
+
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 
+
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password").strip()
+
 
 _client = None
 if api_key:
@@ -152,6 +73,7 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
+
 
 # -----------------------------
 # RAG setup — SAFE CHUNKING
@@ -169,7 +91,11 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
 
+
+
 RAG_DOCS = chunk_text(TEMPLATE_TEXT, max_chars=1000)
+
+
 
 
 @st.cache_resource
@@ -181,8 +107,10 @@ def build_faiss_index(docs: list[str], client: OpenAI):
     if client is None or not docs:
         return None, None
 
+
     texts = [d.strip() for d in docs if d.strip()]
     all_vectors = []
+
 
     for t in texts:
         # extra safety: truncate each chunk before embedding
@@ -193,16 +121,22 @@ def build_faiss_index(docs: list[str], client: OpenAI):
         )
         all_vectors.append(resp.data[0].embedding)
 
+
     vectors = np.array(all_vectors, dtype="float32")
     dim = vectors.shape[1]
+
 
     index = faiss.IndexFlatL2(dim)
     index.add(vectors)
 
+
     return index, texts
 
 
+
+
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
+
 
 # -----------------------------
 # Chatbot (RAG)
@@ -210,7 +144,10 @@ faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
+
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
+
+
 
 
 if _client and chat_query:
@@ -224,13 +161,16 @@ if _client and chat_query:
             input=[q_text]
         ).data[0].embedding
 
+
         q_vec = np.array([q_emb], dtype="float32")
         D, I = faiss_index.search(q_vec, k=5)
+
 
         # build a compact context from the top chunks
         retrieved_chunks = [faiss_texts[i] for i in I[0]]
         context = "\n\n---\n\n".join(retrieved_chunks)
         context = context[:6000]  # final safety cap
+
 
         resp = _client.chat.completions.create(
             model="gpt-4o-mini",
@@ -250,6 +190,8 @@ if _client and chat_query:
         st.sidebar.write(resp.choices[0].message.content.strip())
 
 
+
+
 # -----------------------------
 # Load data
 # -----------------------------
@@ -265,18 +207,22 @@ def load_fertilizer_data():
         encoding="latin1"
     )
 
+
 @st.cache_data
 def load_crop_yield_data():
     crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
     return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
 
+
 fert = load_fertilizer_data()
 df_yield = load_crop_yield_data()
+
 
 # -----------------------------
 # Prepare fertilizer data
 # -----------------------------
 fert_crop = fert[fert["Element"] == "Use per area of cropland"]
+
 
 fert_npk = fert_crop[
     fert_crop["Item"].isin([
@@ -286,13 +232,16 @@ fert_npk = fert_crop[
     ])
 ]
 
+
 fert_npk["Nutrient"] = fert_npk["Item"].map({
     "Nutrient nitrogen N (total)": "Nitrogen (N)",
     "Nutrient phosphate P2O5 (total)": "Phosphorus (P₂O₅)",
     "Nutrient potash K2O (total)": "Potassium (K₂O)"
 })
 
+
 fert_npk = fert_npk.dropna(subset=["Value"])
+
 
 aggregates = [
     "World",
@@ -308,9 +257,12 @@ aggregates = [
     "Oceania"
 ]
 
+
 fert_npk_clean = fert_npk[~fert_npk["Area"].isin(aggregates)]
 
+
 df_fert_global = fert.groupby("Year")["Value"].mean().reset_index()
+
 
 # -----------------------------
 # Prepare crop yield data
@@ -325,11 +277,15 @@ df_long = df_yield.melt(
     value_name="Value"
 )
 
+
 df_long["Year"] = df_long["Year"].str.replace("Y", "").astype(int)
+
 
 crop_yield_only = df_long[df_long["Element"] == "Yield"]
 
+
 global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
+
 
 # -----------------------------
 # Build crop datasets
@@ -339,6 +295,7 @@ def build_crop_df(crop_name: str):
     if selected_crop_df.empty:
         return None
 
+
     global_crop = (
         selected_crop_df.groupby("Year")["Value"]
         .mean()
@@ -346,7 +303,9 @@ def build_crop_df(crop_name: str):
     )
     global_crop["Crop"] = crop_name
 
+
     global_fert = fert.groupby("Year")["Value"].mean().reset_index()
+
 
     df_crop = pd.merge(
         global_crop,
@@ -357,60 +316,53 @@ def build_crop_df(crop_name: str):
     )
     return df_crop
 
+
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
+
 
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-markdown_cell("🌍 Sustainable Fertilizer Optimization", level=1)
+st.title("🌍 Sustainable Fertilizer Optimization")
 
-st.markdown(
-    """
-    <div class="notebook-cell markdown-cell">
-        <div class="cell-label">Markdown Cell</div>
-        <h3>📘 Full Notebook (Editable)</h3>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
 
-st.text_area(
-    "Notebook Text",
-    value=TEMPLATE_TEXT,
-    height=1200
-)
+st.markdown("### 📘 Full Notebook (Editable)")
+st.text_area("Notebook Text", value=TEMPLATE_TEXT, height=1200)
+
 
 st.markdown("---")
+
 
 # -----------------------------
 # CODE BLOCKS (Colab style)
 # -----------------------------
-markdown_cell("🧪 Code Used in This Notebook", level=3)
+st.markdown("### 🧪 Code Used in This Notebook")
 
-code_cell("""
+
+st.code("""
 # Example: Melt crop yield data
-
 df_long = df_yield.melt(
     id_vars=[
-        "Area Code",
-        "Area Code (M49)",
-        "Area",
-        "Item Code",
-        "Item"
+        "Area Code", "Area Code (M49)", "Area",
+        "Item Code", "Item Code (CPC)", "Item",
+        "Element Code", "Element", "Unit"
     ],
     var_name="Year",
     value_name="Value"
 )
 """)
 
+
 # -----------------------------
 # EDA SECTION
 # -----------------------------
-markdown_cell("📊 Data & Exploratory Analysis")
+st.header("📊 Data & Exploratory Analysis")
+
 
 # Global NPK Fertilizer Trends
 st.subheader("Global NPK Fertilizer Trends")
+
 
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.lineplot(
@@ -428,23 +380,30 @@ sns.lineplot(
 ax.grid(True)
 st.pyplot(fig)
 
+
 # Distribution of NPK Fertilizer Use
-markdown_cell("Global NPK Fertilizer Trends", level=3)
+st.subheader("Distribution of NPK Fertilizer Use")
 
-code_cell("""
-sns.lineplot(
+
+fig2 = plt.figure(figsize=(10, 6))
+sns.boxplot(
     data=fert_npk_clean,
-    x="Year",
+    x="Nutrient",
     y="Value",
-    hue="Nutrient"
+    hue="Nutrient",
+    palette={
+        "Nitrogen (N)": "#2E7D32",
+        "Phosphorus (P₂O₅)": "#8D6E63",
+        "Potassium (K₂O)": "#F9A825"
+    },
+    legend=False
 )
-""")
+st.pyplot(fig2)
 
-output_cell()
-st.pyplot(fig)
 
 # Global Fertilizer Use Over Time
 st.subheader("Global Fertilizer Use Over Time")
+
 
 fig3 = plt.figure(figsize=(10, 5))
 plt.plot(
@@ -456,12 +415,12 @@ plt.plot(
 )
 st.pyplot(fig3)
 
+
 # -----------------------------
 # CROP MODELING
 # -----------------------------
-markdown_cell(
-    f"🌾 Modeling: {crop} Yield vs Fertilizer"
-)
+st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
+
 
 if df_crop_main is None:
     st.error(f"Could not find crop `{crop}` in FAOSTAT yield data.")
@@ -475,6 +434,7 @@ else:
     plt.ylabel("Yield (kg/ha)")
     plt.grid(True)
     st.pyplot(fig)
+
 
     # Yield vs Fertilizer
     st.subheader(f"{crop} Yield vs Fertilizer Use")
@@ -492,43 +452,33 @@ else:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig2)
 
+
     # Correlation
     st.subheader("Correlation Between Fertilizer Use and Yield")
     st.dataframe(df_crop_main[["Value_fert", "Value_yield"]].corr())
+
 
     # Linear Regression
     st.subheader("Model 1: Linear Regression")
     X = df_crop_main[["Value_fert"]]
     y = df_crop_main["Value_yield"]
 
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
 
-    code_cell("""
-X = df_crop_main[['Value_fert']]
-y = df_crop_main['Value_yield']
 
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-y_pred = model.predict(X_test)
-""")
-
-output_cell()
-
-st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
-st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
-st.markdown(f"- **RMSE:** {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
-st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
+
 
     st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
     st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
     st.markdown(f"- **RMSE:** {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
     st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
+
 
     fig3 = plt.figure(figsize=(10, 6))
     plt.scatter(y_test, y_pred, color="#B58A4A", edgecolor="black", s=85)
@@ -544,49 +494,39 @@ st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
     plt.grid(True, alpha=0.3)
     st.pyplot(fig3)
 
+
 # -----------------------------
 # OPTIMAL FERTILIZER
 # -----------------------------
-markdown_cell(
-    f"🎯 Optimal Fertilizer Level for {crop}"
-)
+st.header(f"🎯 Optimal Fertilizer Level for {crop}")
+
 
 if df_crop_main is not None:
     X = df_crop_main[["Value_fert"]]
     y = df_crop_main["Value_yield"]
 
+
     poly = PolynomialFeatures(degree=2, include_bias=False)
     X_poly = poly.fit_transform(X)
 
+
     model2 = LinearRegression()
     model2.fit(X_poly, y)
+
 
     a = model2.coef_[1]
     b = model2.coef_[0]
     x_opt = -b / (2 * a)
 
+
     x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
     x_opt_poly = poly.transform(x_opt_df)
     y_opt = model2.predict(x_opt_poly)[0]
 
+
     st.markdown(f"**Optimal Fertilizer (kg/ha):** `{x_opt:.2f}`")
     st.markdown(f"**Predicted Yield at Optimum (kg/ha):** `{y_opt:.2f}`")
 
-code_cell("""
-poly = PolynomialFeatures(
-    degree=2,
-    include_bias=False
-)
-
-X_poly = poly.fit_transform(X)
-
-model2.fit(X_poly, y)
-
-x_opt = -b / (2 * a)
-""")
-
-output_cell()
-st.pyplot(fig_opt)
 
     # Curve plot
     x_range = np.linspace(
@@ -597,6 +537,7 @@ st.pyplot(fig_opt)
     x_range_df = pd.DataFrame({"Value_fert": x_range})
     X_curve = poly.transform(x_range_df)
     y_curve = model2.predict(X_curve)
+
 
     fig_opt = plt.figure(figsize=(10, 6))
     plt.plot(x_range, y_curve, color="#7C6A4A", linewidth=2.5)
@@ -622,15 +563,18 @@ st.pyplot(fig_opt)
     plt.grid(True, alpha=0.3)
     st.pyplot(fig_opt)
 
+
 # -----------------------------
 # SECOND CROP ANALYSIS
 # -----------------------------
 st.header(f"🌾 Second Crop Analysis: {crop2}")
 
+
 if df_crop_second is None:
     st.info("Enter a valid second crop name to enable this section.")
 else:
     st.subheader(f"Global {crop2} Yield Over Time")
+
 
     fig_sc = plt.figure(figsize=(10, 5))
     plt.plot(
@@ -645,7 +589,9 @@ else:
     plt.grid(True)
     st.pyplot(fig_sc)
 
+
     st.subheader(f"{crop2} Yield vs Fertilizer Use")
+
 
     fig_sc2 = plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -662,24 +608,27 @@ else:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig_sc2)
 
+
 # -----------------------------
 # SUMMARY
 # -----------------------------
-markdown_cell(
-    "📜 Summary & Export"
-)
+st.header("📜 Summary & Export")
+
 
 summary_text = f"""
 Sustainable Fertilizer Optimization Summary
 
+
 Main crop: {crop}
 Second crop: {crop2}
+
 
 This project uses FAOSTAT fertilizer and yield data to model how fertilizer application
 affects crop performance. Linear and polynomial regression models quantify the relationship
 between fertilizer use (kg/ha) and yield (kg/ha), and identify an optimal fertilizer level
 that maximizes predicted yield while avoiding unnecessary input use.
 """
+
 
 st.download_button(
     label="📥 Download summary as .txt",
