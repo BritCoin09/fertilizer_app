@@ -31,21 +31,6 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Load notebook text for display
-# -----------------------------
-def load_notebook():
-    try:
-        with open(
-            "full_template_text.txt",
-            "r",
-            encoding="utf-8"
-        ) as f:
-            return f.read()
-    except Exception:
-        return ""
-
-NOTEBOOK_TEXT = load_notebook()
-# -----------------------------
 # Load entire repository for RAG
 # -----------------------------
 def load_repo_files():
@@ -383,17 +368,6 @@ df_crop_second = build_crop_df(crop2) if crop2 else None
 # NOTEBOOK STARTS HERE
 # -----------------------------
 st.title("🌍 Sustainable Fertilizer Optimization")
-
-st.markdown("### 📘 Full Notebook (Editable)")
-
-edited_notebook = st.text_area(
-    "Notebook",
-    value=NOTEBOOK_TEXT,
-    height=1200
-)
-
-st.markdown("---")
-
 
 # -----------------------------
 # EDA SECTION
