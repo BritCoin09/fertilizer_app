@@ -236,7 +236,7 @@ st.markdown("### 📘 Full Notebook")
 st.text_area(
     "Notebook Text",
     value=NOTEBOOK_TEXT,
-    height=1200
+    height=300
 )
 
 @st.cache_data
