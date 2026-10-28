@@ -122,6 +122,11 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 
+st.write("Client Exists:", _client is not None)
+st.write("Template Length:", len(TEMPLATE_TEXT))
+st.write("Chunks:", len(RAG_DOCS))
+st.write("FAISS Index:", faiss_index is not None)
+
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
