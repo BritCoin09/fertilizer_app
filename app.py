@@ -169,7 +169,6 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
     return index, texts
 
-st.write("Number of chunks:", len(RAG_DOCS))
 faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 
 # -----------------------------
