@@ -355,7 +355,7 @@ st.title("🌍 Sustainable Fertilizer Optimization")
 
 
 st.markdown("### 📘 Full Notebook (Editable)")
-st.text_area("Notebook Text", value=TEMPLATE_TEXT, height=1200)
+st.text_area("Notebook Text", value=ALL_REPO_TEXT, height=1200)
 
 
 st.markdown("---")
