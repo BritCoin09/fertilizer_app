@@ -229,6 +229,20 @@ if _client and chat_query:
 # -----------------------------
 # Load data
 # -----------------------------
+
+def load_notebook_text():
+    with open("full_template_text.txt", "r", encoding="utf-8") as f:
+        return f.read()
+
+NOTEBOOK_TEXT = load_notebook_text()
+
+st.markdown("### 📘 Full Notebook")
+st.text_area(
+    "Notebook Text",
+    value=NOTEBOOK_TEXT,
+    height=1200
+)
+
 @st.cache_data
 def load_fertilizer_data():
     path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
