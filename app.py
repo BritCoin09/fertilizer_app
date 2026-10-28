@@ -131,10 +131,12 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
     text = text[:30000]  # hard cap the entire template to avoid huge inputs
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-RAG_DOCS = chunk_text(
-    ALL_REPO_TEXT,
-    max_chars=1000
-)
+RAG_DOCS = []
+
+for doc in REPO_FILES:
+    RAG_DOCS.extend(
+        chunk_text(doc, max_chars=1000)
+    )
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
@@ -211,9 +213,10 @@ if _client and chat_query:
                     "role": "system",
                     "content": (
                         "You are a project assistant for the Sustainable Fertilizer Optimization project. "
-                        "You have access to the repository files, source code, notes, templates, and documentation. "
-                        "Answer questions using the retrieved repository context.\n\n"
-                        f"{context}"
+                        "Use the retrieved repository context when it is relevant and available. "
+                        "If the answer cannot be found in the repository context, use your general knowledge to provide a helpful answer. "
+                        "When discussing this specific project, prioritize information found in the repository. "
+                        f"\n\nRepository Context:\n{context}"
                     ),
                 },
                 {"role": "user", "content": chat_query},
@@ -259,6 +262,7 @@ fert_npk = fert_crop[
     ])
 ]
 
+fert_npk = fert_npk.copy()
 
 fert_npk["Nutrient"] = fert_npk["Item"].map({
     "Nutrient nitrogen N (total)": "Nitrogen (N)",
@@ -352,14 +356,11 @@ df_crop_second = build_crop_df(crop2) if crop2 else None
 # NOTEBOOK STARTS HERE
 # -----------------------------
 st.title("🌍 Sustainable Fertilizer Optimization")
-
-
-st.markdown("### 📘 Full Notebook (Editable)")
-st.text_area("Notebook Text", value=ALL_REPO_TEXT, height=1200)
-
-
+st.markdown("### 📘 Project Assistant")
+st.info(
+    "The AI assistant can access project files, documentation, notes, and source code from this repository."
+)
 st.markdown("---")
-
 
 # -----------------------------
 # CODE BLOCKS (Colab style)
