@@ -31,6 +31,21 @@ st.set_page_config(
 )
 
 # -----------------------------
+# Load notebook text for display
+# -----------------------------
+def load_notebook():
+    try:
+        with open(
+            "full_template_text.txt",
+            "r",
+            encoding="utf-8"
+        ) as f:
+            return f.read()
+    except Exception:
+        return ""
+
+NOTEBOOK_TEXT = load_notebook()
+# -----------------------------
 # Load entire repository for RAG
 # -----------------------------
 def load_repo_files():
@@ -116,9 +131,6 @@ if api_key:
         _client = None
 
 
-# -----------------------------
-# RAG setup — SAFE CHUNKING
-# -----------------------------
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
 # -----------------------------
@@ -371,30 +383,16 @@ df_crop_second = build_crop_df(crop2) if crop2 else None
 # NOTEBOOK STARTS HERE
 # -----------------------------
 st.title("🌍 Sustainable Fertilizer Optimization")
-st.markdown("### 📘 Project Assistant")
-st.info(
-    "The AI assistant can access project files, documentation, notes, and source code from this repository."
+
+st.markdown("### 📘 Full Notebook (Editable)")
+
+edited_notebook = st.text_area(
+    "Notebook",
+    value=NOTEBOOK_TEXT,
+    height=1200
 )
+
 st.markdown("---")
-
-# -----------------------------
-# CODE BLOCKS (Colab style)
-# -----------------------------
-st.markdown("### 🧪 Code Used in This Notebook")
-
-
-st.code("""
-# Example: Melt crop yield data
-df_long = df_yield.melt(
-    id_vars=[
-        "Area Code", "Area Code (M49)", "Area",
-        "Item Code", "Item Code (CPC)", "Item",
-        "Element Code", "Element", "Unit"
-    ],
-    var_name="Year",
-    value_name="Value"
-)
-""")
 
 
 # -----------------------------
