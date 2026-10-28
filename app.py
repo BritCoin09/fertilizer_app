@@ -89,33 +89,34 @@ RAG_DOCS = chunk_text(TEMPLATE_TEXT, max_chars=1000)
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
-    """
-    Build a FAISS index over template chunks.
-    Each chunk is embedded individually to guarantee we stay under token limits.
-    """
+
     if _client is None or not docs:
         return None, None
-
 
     texts = [d.strip() for d in docs if d.strip()]
     all_vectors = []
 
+    try:
+        for t in texts:
+            safe_t = t[:2000]
 
-    for t in texts:
-        # extra safety: truncate each chunk before embedding
-        safe_t = t[:2000]
-        resp = _client.embeddings.create(
-            model="text-embedding-3-small",
-            input=[safe_t]
-        )
-        all_vectors.append(resp.data[0].embedding)
+            resp = _client.embeddings.create(
+                model="text-embedding-3-small",
+                input=[safe_t]
+            )
 
+            all_vectors.append(resp.data[0].embedding)
+
+    except Exception as e:
+        st.error(f"Embedding Error: {e}")
+        return None, None
 
     vectors = np.array(all_vectors, dtype="float32")
+
     dim = vectors.shape[1]
 
-
     index = faiss.IndexFlatL2(dim)
+
     index.add(vectors)
 
     return index, texts
