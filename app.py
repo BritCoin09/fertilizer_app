@@ -31,19 +31,65 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Load full notebook template
+# Load entire repository for RAG
 # -----------------------------
-def load_template(path="full_template_text.txt"):
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    return "Template file missing."
+def load_repo_files():
+    docs = []
+
+    allowed_extensions = (
+        ".py",
+        ".txt",
+        ".md"
+    )
+
+    ignored_dirs = {
+        ".git",
+        "__pycache__",
+        ".venv",
+        "venv",
+        ".streamlit"
+    }
+
+    for root, dirs, files in os.walk("."):
+
+        dirs[:] = [
+            d for d in dirs
+            if d not in ignored_dirs
+        ]
+
+        for file in files:
+
+            if file.endswith(allowed_extensions):
+
+                try:
+                    path = os.path.join(root, file)
+
+                    with open(
+                        path,
+                        "r",
+                        encoding="utf-8",
+                        errors="ignore"
+                    ) as f:
+
+                        content = f.read()
+
+                    docs.append(
+                        f"FILE: {path}\n\n{content}"
+                    )
+
+                except Exception:
+                    pass
+
+    return docs
 
 
-TEMPLATE_TEXT = load_template()
-# Hard cap the template so it can never blow up embeddings
-MAX_TEMPLATE_CHARS = 20000  # adjust if you want
-TEMPLATE_TEXT = TEMPLATE_TEXT[:MAX_TEMPLATE_CHARS]
+REPO_FILES = load_repo_files()
+
+ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
+
+MAX_TEMPLATE_CHARS = 50000
+
+ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
@@ -85,7 +131,10 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
     text = text[:30000]  # hard cap the entire template to avoid huge inputs
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
-RAG_DOCS = chunk_text(TEMPLATE_TEXT, max_chars=1000)
+RAG_DOCS = chunk_text(
+    ALL_REPO_TEXT,
+    max_chars=1000
+)
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
@@ -165,8 +214,9 @@ if _client and chat_query:
                 {
                     "role": "system",
                     "content": (
-                        "You are a sustainable fertilizer optimization assistant. "
-                        "Use the following notebook context to answer concisely:\n\n"
+                        "You are a project assistant for the Sustainable Fertilizer Optimization project. "
+                        "You have access to the repository files, source code, notes, templates, and documentation. "
+                        "Answer questions using the retrieved repository context.\n\n"
                         f"{context}"
                     ),
                 },
