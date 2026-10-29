@@ -352,7 +352,7 @@ Fertilizer plays a critical role in global food production, but excessive applic
 
 This project explores global fertilizer trends, crop yield relationships, and optimal fertilizer levels using FAOSTAT data.
 """,
-    height=100,
+    height=150,
     key="problem_impact"
 )
 
