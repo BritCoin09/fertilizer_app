@@ -466,7 +466,7 @@ ax.set_ylabel("Nutrient Application Rate (kg/ha)")
 ax.set_title(
     "Global NPK Fertilizer Use Over Time (kg/ha)",
     fontweight="bold"
-)
+""")
 
 st.pyplot(fig)
 
