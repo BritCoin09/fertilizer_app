@@ -5,18 +5,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
 
-
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 
-
 import kagglehub
 import faiss
 from openai import OpenAI
-import pickle
-
 
 # -----------------------------
 # Global styling
@@ -29,7 +25,6 @@ st.set_page_config(
     page_title="Sustainable Fertilizer Optimization",
     layout="wide"
 )
-
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -82,7 +77,6 @@ def load_repo_files():
 
     return docs
 
-
 REPO_FILES = load_repo_files()
 
 ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
@@ -99,13 +93,10 @@ st.sidebar.subheader("✏️ Crop Selection")
 crop = st.sidebar.text_input("Main crop name", value="Wheat")
 crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
 
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 
-
 api_key = st.sidebar.text_input("Enter your OpenAI API key", type="password").strip()
-
 
 _client = None
 if api_key:
@@ -114,7 +105,6 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
-
 
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
@@ -177,7 +167,6 @@ faiss_index, faiss_texts = build_faiss_index(RAG_DOCS, _client)
 st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
-
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 
 if _client and chat_query:
@@ -198,7 +187,6 @@ if _client and chat_query:
         retrieved_chunks = [faiss_texts[i] for i in I[0]]
         context = "\n\n---\n\n".join(retrieved_chunks)
         context = context[:6000]  # final safety cap
-
 
         resp = _client.chat.completions.create(
             model="gpt-4o-mini",
@@ -222,7 +210,6 @@ if _client and chat_query:
 # -----------------------------
 # Load data
 # -----------------------------
-
 @st.cache_data
 def load_fertilizer_data():
     path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
@@ -248,7 +235,6 @@ df_yield = load_crop_yield_data()
 # -----------------------------
 fert_crop = fert[fert["Element"] == "Use per area of cropland"]
 
-
 fert_npk = fert_crop[
     fert_crop["Item"].isin([
         "Nutrient nitrogen N (total)",
@@ -265,9 +251,7 @@ fert_npk["Nutrient"] = fert_npk["Item"].map({
     "Nutrient potash K2O (total)": "Potassium (K₂O)"
 })
 
-
 fert_npk = fert_npk.dropna(subset=["Value"])
-
 
 aggregates = [
     "World",
@@ -283,12 +267,9 @@ aggregates = [
     "Oceania"
 ]
 
-
 fert_npk_clean = fert_npk[~fert_npk["Area"].isin(aggregates)]
 
-
 df_fert_global = fert.groupby("Year")["Value"].mean().reset_index()
-
 
 # -----------------------------
 # Prepare crop yield data
@@ -303,15 +284,11 @@ df_long = df_yield.melt(
     value_name="Value"
 )
 
-
 df_long["Year"] = df_long["Year"].str.replace("Y", "").astype(int)
-
 
 crop_yield_only = df_long[df_long["Element"] == "Yield"]
 
-
 global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
-
 
 # -----------------------------
 # Build crop datasets
@@ -321,7 +298,6 @@ def build_crop_df(crop_name: str):
     if selected_crop_df.empty:
         return None
 
-
     global_crop = (
         selected_crop_df.groupby("Year")["Value"]
         .mean()
@@ -329,9 +305,7 @@ def build_crop_df(crop_name: str):
     )
     global_crop["Crop"] = crop_name
 
-
     global_fert = fert.groupby("Year")["Value"].mean().reset_index()
-
 
     df_crop = pd.merge(
         global_crop,
@@ -342,10 +316,8 @@ def build_crop_df(crop_name: str):
     )
     return df_crop
 
-
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
-
 
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
@@ -353,7 +325,7 @@ df_crop_second = build_crop_df(crop2) if crop2 else None
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-st.title("🌍 Sustainable Fertilizer Optimization")
+st.title("🌾Sustainable Fertilizer Optimization🌱")
 
 st.header("🌍 Problem & Impact")
 
@@ -368,9 +340,36 @@ This project explores global fertilizer trends, crop yield relationships, and op
     key="problem_impact"
 )
 
-# -----------------------------
-# EDA SECTION
-# -----------------------------
+st.header("📦 Imports")
+
+imports_text = st.text_area(
+    "Imports Notes",
+    value="""
+Core libraries are used for data manipulation, visualization, and machine learning.
+
+The imports below support data loading, exploratory analysis, regression modeling, optimization, and the AI assistant.
+""",
+    height=120,
+    key="imports_notes"
+)
+
+st.code("""
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import streamlit as st
+
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LinearRegression
+
+import kagglehub
+import faiss
+from openai import OpenAI
+""")
 # -----------------------------
 # EDA SECTION
 # -----------------------------
@@ -412,7 +411,6 @@ st.pyplot(fig)
 # Distribution of NPK Fertilizer Use
 st.subheader("Distribution of NPK Fertilizer Use")
 
-
 fig2 = plt.figure(figsize=(10, 6))
 sns.boxplot(
     data=fert_npk_clean,
@@ -428,10 +426,8 @@ sns.boxplot(
 )
 st.pyplot(fig2)
 
-
 # Global Fertilizer Use Over Time
 st.subheader("Global Fertilizer Use Over Time")
-
 
 fig3 = plt.figure(figsize=(10, 5))
 plt.plot(
@@ -443,12 +439,10 @@ plt.plot(
 )
 st.pyplot(fig3)
 
-
 # -----------------------------
 # CROP MODELING
 # -----------------------------
 st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
-
 
 if df_crop_main is None:
     st.error(f"Could not find crop `{crop}` in FAOSTAT yield data.")
@@ -462,7 +456,6 @@ else:
     plt.ylabel("Yield (kg/ha)")
     plt.grid(True)
     st.pyplot(fig)
-
 
     # Yield vs Fertilizer
     st.subheader(f"{crop} Yield vs Fertilizer Use")
@@ -480,33 +473,27 @@ else:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig2)
 
-
     # Correlation
     st.subheader("Correlation Between Fertilizer Use and Yield")
     st.dataframe(df_crop_main[["Value_fert", "Value_yield"]].corr())
-
 
     # Linear Regression
     st.subheader("Model 1: Linear Regression")
     X = df_crop_main[["Value_fert"]]
     y = df_crop_main["Value_yield"]
 
-
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-
 
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
-
     st.markdown(f"- **Slope:** {model.coef_[0]:.2f}")
     st.markdown(f"- **Intercept:** {model.intercept_:.2f}")
     st.markdown(f"- **RMSE:** {np.sqrt(mean_squared_error(y_test, y_pred)):.2f}")
     st.markdown(f"- **R²:** {r2_score(y_test, y_pred):.3f}")
-
 
     fig3 = plt.figure(figsize=(10, 6))
     plt.scatter(y_test, y_pred, color="#B58A4A", edgecolor="black", s=85)
@@ -522,39 +509,31 @@ else:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig3)
 
-
 # -----------------------------
 # OPTIMAL FERTILIZER
 # -----------------------------
 st.header(f"🎯 Optimal Fertilizer Level for {crop}")
 
-
 if df_crop_main is not None:
     X = df_crop_main[["Value_fert"]]
     y = df_crop_main["Value_yield"]
 
-
     poly = PolynomialFeatures(degree=2, include_bias=False)
     X_poly = poly.fit_transform(X)
 
-
     model2 = LinearRegression()
     model2.fit(X_poly, y)
-
 
     a = model2.coef_[1]
     b = model2.coef_[0]
     x_opt = -b / (2 * a)
 
-
     x_opt_df = pd.DataFrame({"Value_fert": [x_opt]})
     x_opt_poly = poly.transform(x_opt_df)
     y_opt = model2.predict(x_opt_poly)[0]
 
-
     st.markdown(f"**Optimal Fertilizer (kg/ha):** `{x_opt:.2f}`")
     st.markdown(f"**Predicted Yield at Optimum (kg/ha):** `{y_opt:.2f}`")
-
 
     # Curve plot
     x_range = np.linspace(
@@ -565,7 +544,6 @@ if df_crop_main is not None:
     x_range_df = pd.DataFrame({"Value_fert": x_range})
     X_curve = poly.transform(x_range_df)
     y_curve = model2.predict(X_curve)
-
 
     fig_opt = plt.figure(figsize=(10, 6))
     plt.plot(x_range, y_curve, color="#7C6A4A", linewidth=2.5)
@@ -591,18 +569,15 @@ if df_crop_main is not None:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig_opt)
 
-
 # -----------------------------
 # SECOND CROP ANALYSIS
 # -----------------------------
 st.header(f"🌾 Second Crop Analysis: {crop2}")
 
-
 if df_crop_second is None:
     st.info("Enter a valid second crop name to enable this section.")
 else:
     st.subheader(f"Global {crop2} Yield Over Time")
-
 
     fig_sc = plt.figure(figsize=(10, 5))
     plt.plot(
@@ -617,9 +592,7 @@ else:
     plt.grid(True)
     st.pyplot(fig_sc)
 
-
     st.subheader(f"{crop2} Yield vs Fertilizer Use")
-
 
     fig_sc2 = plt.figure(figsize=(10, 6))
     plt.scatter(
@@ -636,20 +609,16 @@ else:
     plt.grid(True, alpha=0.3)
     st.pyplot(fig_sc2)
 
-
 # -----------------------------
 # SUMMARY
 # -----------------------------
 st.header("📜 Summary & Export")
 
-
 summary_text = f"""
 Sustainable Fertilizer Optimization Summary
 
-
 Main crop: {crop}
 Second crop: {crop2}
-
 
 This project uses FAOSTAT fertilizer and yield data to model how fertilizer application
 affects crop performance. Linear and polynomial regression models quantify the relationship
@@ -657,12 +626,8 @@ between fertilizer use (kg/ha) and yield (kg/ha), and identify an optimal fertil
 that maximizes predicted yield while avoiding unnecessary input use.
 """
 
+st.header("🤖 About the AI Assistant")
 
-st.download_button(
-    label="📥 Download summary as .txt",
-    data=summary_text,
-    file_name="fertilizer_optimization_summary.txt",
-    mime="text/plain"
-)
-
-
+st.markdown("""
+This application includes a Retrieval-Augmented Generation (RAG) assistant that can answer questions about the project documentation, notes, source code, and supporting materials included in the repository.
+""")
