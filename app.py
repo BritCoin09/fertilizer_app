@@ -93,22 +93,6 @@ st.sidebar.subheader("✏️ Crop Selection")
 crop = st.sidebar.text_input("Main crop name", value="Wheat")
 crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
 
-# -----------------------------
-# Sidebar: Crop Colors
-# -----------------------------
-st.sidebar.markdown("---")
-st.sidebar.subheader("🎨 Crop Colors")
-
-crop1_color = st.sidebar.color_picker(
-    "Main Crop Color",
-    "#B58A4A"
-)
-
-crop2_color = st.sidebar.color_picker(
-    "Second Crop Color",
-    "#D5B37E"
-)
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 
