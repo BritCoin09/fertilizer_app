@@ -351,59 +351,47 @@ df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
 
 # -----------------------------
-# Editable Markdown Helper
-# -----------------------------
-def editable_markdown(title, default_text, key, height=200):
-
-    with st.expander(f"✏️ Edit {title}"):
-        text = st.text_area(
-            label=title,
-            value=default_text,
-            height=height,
-            key=key
-        )
-
-    st.markdown(text)
-
-    return text
-
-
-# -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
 st.title("🌍 Sustainable Fertilizer Optimization")
 
 st.header("🌍 Problem & Impact")
 
-problem_impact = editable_markdown(
+problem_impact = st.text_area(
     "Problem & Impact",
-    """
+    value="""
 Fertilizer plays a critical role in global food production, but excessive application can increase costs and create environmental risks.
 
 This project explores global fertilizer trends, crop yield relationships, and optimal fertilizer levels using FAOSTAT data.
 """,
-    "problem_impact"
+    height=200,
+    key="problem_impact"
 )
 
 # -----------------------------
 # EDA SECTION
 # -----------------------------
+# -----------------------------
+# EDA SECTION
+# -----------------------------
 st.header("📊 Data & Exploratory Analysis")
 
-eda_text = editable_markdown(
+eda_intro = st.text_area(
     "EDA Introduction",
-    """Nitrogen, phosphorus, and potassium...""",
-    "eda_intro"
-)
+    value="""
+Nitrogen, phosphorus, and potassium are the three most commonly used fertilizer nutrients globally.
 
-st.subheader("Global NPK Fertilizer Trends")
-st.pyplot(fig)
+The chart below shows nutrient trends over time.
+""",
+    height=150,
+    key="eda_intro"
+)
 
 # Global NPK Fertilizer Trends
 st.subheader("Global NPK Fertilizer Trends")
 
-
 fig, ax = plt.subplots(figsize=(12, 6))
+
 sns.lineplot(
     data=fert_npk_clean,
     x="Year",
@@ -416,9 +404,10 @@ sns.lineplot(
     },
     ax=ax
 )
-ax.grid(True)
-st.pyplot(fig)
 
+ax.grid(True)
+
+st.pyplot(fig)
 
 # Distribution of NPK Fertilizer Use
 st.subheader("Distribution of NPK Fertilizer Use")
