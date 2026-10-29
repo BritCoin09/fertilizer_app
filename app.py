@@ -522,7 +522,7 @@ distribution_intro = st.text_area(
     value="""
 This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
 """,
-    height=220,
+    height=150,
     key="distribution_intro"
 )
 
@@ -606,52 +606,12 @@ plt.title(
 
 st.pyplot(fig)
 
-fig = plt.figure(figsize=(10, 6))
-fig.patch.set_facecolor("#F2F2F0")
-
-ax = plt.gca()
-ax.set_facecolor("#FAFAF7")
-
-sns.boxplot(
-    data=fert_npk_clean,
-    x="Nutrient",
-    y="Value",
-    hue="Nutrient",
-    palette={
-        "Nitrogen (N)": "#2E7D32",
-        "Phosphorus (P₂O₅)": "#8D6E63",
-        "Potassium (K₂O)": "#F9A825"
-    },
-    legend=False,
-    ax=ax
-)
-
-ax.grid(
-    True,
-    which="both",
-    axis="y",
-    color="#D9D9D6",
-    linewidth=0.6,
-    alpha=0.6
-)
-
-ax.set_axisbelow(True)
-
-plt.xlabel("Nutrient Type")
-plt.ylabel("Fertilizer Use (kg/ha)")
-plt.title(
-    "Distribution of NPK Fertilizer Use (kg/ha)",
-    fontweight="bold"
-)
-
-st.pyplot(fig)
-
 distribution_interpretation = st.text_area(
     "Interpretation",
     value="""
 This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
 """,
-    height=220,
+    height=150,
     key="distribution_interpretation"
 )
 
@@ -782,27 +742,9 @@ top_n_interpretation = st.text_area(
     value="""
 The Netherlands appears at the top of the ranking due to its extremely intensive agricultural system. Despite its small land area, it is one of the world's largest agricultural exporters, relying on high-yield greenhouse production, dense livestock operations, and nutrient-intensive farming practices. These factors drive nitrogen application far above global averages.
 """,
-    height=250,
+    height=180,
     key="top_n_interpretation"
 )
-
-# Distribution of NPK Fertilizer Use
-st.subheader("Distribution of NPK Fertilizer Use")
-
-fig2 = plt.figure(figsize=(10, 6))
-sns.boxplot(
-    data=fert_npk_clean,
-    x="Nutrient",
-    y="Value",
-    hue="Nutrient",
-    palette={
-        "Nitrogen (N)": "#2E7D32",
-        "Phosphorus (P₂O₅)": "#8D6E63",
-        "Potassium (K₂O)": "#F9A825"
-    },
-    legend=False
-)
-st.pyplot(fig2)
 
 # Global Fertilizer Use Over Time
 st.subheader("Global Fertilizer Use Over Time (kg/ha)")
@@ -866,7 +808,7 @@ fert_use_interpretation = st.text_area(
     value="""
 This line chart shows the long-term rise in global fertilizer application rates. Fertilizer use has increased steadily over the past several decades as global food production expanded, driven by population growth, intensification of agriculture, and the adoption of high-yield farming practices. This upward trend provides important context for understanding modern nutrient demand and environmental pressures.
 """,
-    height=250,
+    height=180,
     key="fert_use_interpretation"
 )
 
@@ -921,10 +863,9 @@ This created the steepest short-term decline in the dataset.
 
 This explains the upward trend after 2010.
 """,
-    height=900,
+    height=1500,
     key="historical_context"
 )
-
 
 # -----------------------------
 # CROP MODELING
@@ -943,7 +884,7 @@ crop_dataset_notes = st.text_area(
     value="""
 This dataset provides global crop yield information from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with fertilizer application data in the next steps. This forms the foundation for the crop-specific modeling and analysis that follows.
 """,
-    height=180,
+    height=150,
     key="crop_dataset_notes"
 )
 
@@ -962,7 +903,7 @@ raw_yield_notes = st.text_area(
     value="""
 I load the full FAOSTAT crop and livestock dataset here so I can filter it down to crop yields only and prepare it for cleaning, merging, and analysis in the next steps.
 """,
-    height=150,
+    height=110,
     key="raw_yield_notes"
 )
 
@@ -972,7 +913,7 @@ reshape_notes = st.text_area(
     value="""
 I reshape the FAOSTAT dataset from wide to long format so each row represents a single crop-year observation. After converting the year column, I filter the dataset to include only yield values for all usable crops. This prepares the data so users can select any crop they want to analyze and supports global aggregation for visualization and modeling in later steps.
 """,
-    height=250,
+    height=180,
     key="reshape_notes"
 )
 st.code("""
@@ -1019,7 +960,7 @@ crop_selection_notes = st.text_area(
     value="""
 The FAOSTAT dataset contains hundreds of available crop types. Users can select any crop included in the dataset for analysis. The selected crop will be used throughout the remainder of the project for visualization, modeling, and optimization.
 """,
-    height=220,
+    height=150,
     key="crop_selection_notes"
 )
 st.code("""
@@ -1050,7 +991,7 @@ crop_modeling_intro = st.text_area(
     and yield. I then extend the model using polynomial features to capture curvature in the yield response. Finally, I identify the fertilizer level that maximizes predicted yield, providing a practical
     recommendation for optimal nutrient application.
     """,
-    height=300,
+    height=250,
     key="crop_modeling_intro"
 )
 st.subheader(f"Prepare {crop} Dataset for Regression")
@@ -1060,7 +1001,7 @@ crop_prep_notes = st.text_area(
     To prepare the {crop} modeling dataset, I merge global {crop} yield data with global fertilizer application data. This creates a single dataframe where each row represents a year, the corresponding {crop}
     yield, and the fertilizer applied that year. This merged dataset serves as the foundation for all three {crop} models that follow.
     """,
-    height=250,
+    height=180,
     key="crop_prep_notes"
 )
 st.code("""
