@@ -180,9 +180,6 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 
-
-
-
 if _client and chat_query:
     if faiss_index is None:
         st.sidebar.error("RAG index unavailable.")
@@ -225,19 +222,6 @@ if _client and chat_query:
 # -----------------------------
 # Load data
 # -----------------------------
-
-def load_notebook_text():
-    with open("full_template_text.txt", "r", encoding="utf-8") as f:
-        return f.read()
-
-NOTEBOOK_TEXT = load_notebook_text()
-
-st.markdown("### 📘 Full Notebook")
-st.text_area(
-    "Notebook Text",
-    value=NOTEBOOK_TEXT,
-    height=300
-)
 
 @st.cache_data
 def load_fertilizer_data():
@@ -363,16 +347,57 @@ df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
 
 
+df_crop_main = build_crop_df(crop)
+df_crop_second = build_crop_df(crop2) if crop2 else None
+
+# -----------------------------
+# Editable Markdown Helper
+# -----------------------------
+def editable_markdown(title, default_text, key, height=200):
+
+    with st.expander(f"✏️ Edit {title}"):
+        text = st.text_area(
+            label=title,
+            value=default_text,
+            height=height,
+            key=key
+        )
+
+    st.markdown(text)
+
+    return text
+
+
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
 st.title("🌍 Sustainable Fertilizer Optimization")
+
+st.header("🌍 Problem & Impact")
+
+problem_impact = editable_markdown(
+    "Problem & Impact",
+    """
+Fertilizer plays a critical role in global food production, but excessive application can increase costs and create environmental risks.
+
+This project explores global fertilizer trends, crop yield relationships, and optimal fertilizer levels using FAOSTAT data.
+""",
+    "problem_impact"
+)
 
 # -----------------------------
 # EDA SECTION
 # -----------------------------
 st.header("📊 Data & Exploratory Analysis")
 
+eda_text = editable_markdown(
+    "EDA Introduction",
+    """Nitrogen, phosphorus, and potassium...""",
+    "eda_intro"
+)
+
+st.subheader("Global NPK Fertilizer Trends")
+st.pyplot(fig)
 
 # Global NPK Fertilizer Trends
 st.subheader("Global NPK Fertilizer Trends")
