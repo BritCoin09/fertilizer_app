@@ -365,7 +365,7 @@ Core libraries are used for data manipulation, visualization, and machine learni
 
 The imports below support data loading, exploratory analysis, regression modeling, optimization, and the AI assistant.
 """,
-    height=120,
+    height=150,
     key="imports_notes"
 )
 
