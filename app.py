@@ -416,7 +416,7 @@ The EDA examines:
 
 This analysis builds the foundation for the regression and polynomial models that follow.
 """,
-    height=350,
+    height=500,
     key="eda_intro"
 )
 
