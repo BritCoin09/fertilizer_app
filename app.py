@@ -526,7 +526,7 @@ npk_interpretation = st.text_area(
     value="""
 This chart shows that global fertilizer use has become increasingly nitrogen-heavy over the past 60 years. Nitrogen application rises sharply, while phosphorus and potassium remain relatively stable.
 """,
-    height=180,
+    height=150,
     key="npk_interpretation"
 )
 
