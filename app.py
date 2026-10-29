@@ -376,18 +376,77 @@ from openai import OpenAI
 st.header("📊 Data & Exploratory Analysis")
 
 eda_intro = st.text_area(
-    "EDA Introduction",
-    value="""
-Nitrogen, phosphorus, and potassium are the three most commonly used fertilizer nutrients globally.
+    "EDA Overview",
+    value=f"""
+This project uses two global, annual datasets:
 
-The chart below shows nutrient trends over time.
+• Fertilizer use (kg/ha)
+
+• Crop yield (kg/ha) for {crop} and {crop2}
+
+The fertilizer dataset provides global fertilizer application per year, while the yield dataset provides crop-specific yields.
+
+Exploratory Analysis
+
+The EDA examines:
+
+• long-term fertilizer use trends
+
+• yield trends for {crop} and {crop2}
+
+• the relationship between fertilizer and yield
+
+• where diminishing returns begin as fertilizer increases
+
+This analysis builds the foundation for the regression and polynomial models that follow.
 """,
-    height=150,
+    height=350,
     key="eda_intro"
 )
 
+st.subheader("Load Fertilizer Dataset")
+fert_load_notes = st.text_area(
+    "Dataset Notes",
+    value="""
+This dataset contains global fertilizer application data from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with crop yield information in later steps.
+""",
+    height=120,
+    key="fert_load_notes"
+)
+st.code("""
+path = kagglehub.dataset_download(
+    "raaad3000/faostat-fertilizers-indicators"
+)
+
+fert = pd.read_csv(
+    os.path.join(
+        path,
+        "Environment_Fertilizers_E_All_Data_(Normalized)",
+        "Environment_Fertilizers_E_All_Data_(Normalized).csv"
+    ),
+    encoding="latin1"
+)
+""")
 # Global NPK Fertilizer Trends
 st.subheader("Global NPK Fertilizer Trends")
+
+st.code("""
+fig, ax = plt.subplots(figsize=(12, 6))
+
+sns.lineplot(
+    data=fert_npk_clean,
+    x="Year",
+    y="Value",
+    hue="Nutrient",
+    palette={
+        "Nitrogen (N)": "#2E7D32",
+        "Phosphorus (P₂O₅)": "#8D6E63",
+        "Potassium (K₂O)": "#F9A825"
+    }
+)
+
+ax.grid(True)
+""")
 
 fig, ax = plt.subplots(figsize=(12, 6))
 
@@ -407,6 +466,15 @@ sns.lineplot(
 ax.grid(True)
 
 st.pyplot(fig)
+
+npk_interpretation = st.text_area(
+    "Interpretation",
+    value="""
+This chart shows that global fertilizer use has become increasingly nitrogen-heavy over the past 60 years. Nitrogen application rises sharply, while phosphorus and potassium remain relatively stable.
+""",
+    height=180,
+    key="npk_interpretation"
+)
 
 # Distribution of NPK Fertilizer Use
 st.subheader("Distribution of NPK Fertilizer Use")
