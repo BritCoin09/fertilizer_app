@@ -433,22 +433,8 @@ st.subheader("Global NPK Fertilizer Trends")
 st.code("""
 fig, ax = plt.subplots(figsize=(12, 6))
 
-sns.lineplot(
-    data=fert_npk_clean,
-    x="Year",
-    y="Value",
-    hue="Nutrient",
-    palette={
-        "Nitrogen (N)": "#2E7D32",
-        "Phosphorus (P₂O₅)": "#8D6E63",
-        "Potassium (K₂O)": "#F9A825"
-    }
-)
-
-ax.grid(True)
-""")
-
-fig, ax = plt.subplots(figsize=(12, 6))
+fig.patch.set_facecolor("#F2F2F0")
+ax.set_facecolor("#FAFAF7")
 
 sns.lineplot(
     data=fert_npk_clean,
@@ -463,7 +449,24 @@ sns.lineplot(
     ax=ax
 )
 
-ax.grid(True)
+ax.grid(
+    True,
+    which="both",
+    axis="both",
+    color="#D9D9D6",
+    linewidth=0.6,
+    alpha=0.6
+)
+
+leg = ax.legend()
+leg.get_frame().set_facecolor("#FAFAF7")
+leg.get_frame().set_edgecolor("#D9D9D6")
+
+ax.set_ylabel("Nutrient Application Rate (kg/ha)")
+ax.set_title(
+    "Global NPK Fertilizer Use Over Time (kg/ha)",
+    fontweight="bold"
+)
 
 st.pyplot(fig)
 
