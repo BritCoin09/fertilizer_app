@@ -122,8 +122,11 @@ RAG_DOCS = []
 
 for doc in REPO_FILES:
     RAG_DOCS.extend(
-        chunk_text(doc, max_chars=1000)
+        chunk_text(doc, max_chars=3000)
     )
+    
+st.write("Repo Files:", len(REPO_FILES))
+st.write("Chunk Count:", len(RAG_DOCS))
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
