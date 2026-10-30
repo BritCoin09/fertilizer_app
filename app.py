@@ -170,7 +170,8 @@ faiss_index, faiss_texts = build_faiss_index(
 )
 
 st.write("FAISS BUILD FINISHED")
-
+st.write("FAISS Exists:", faiss_index is not None)
+st.write("Text Count:", len(faiss_texts) if faiss_texts else 0)
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
