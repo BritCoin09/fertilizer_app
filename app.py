@@ -162,8 +162,14 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
     return index, texts
 
-faiss_index = None
-faiss_texts = None
+st.write("STARTING FAISS BUILD")
+
+faiss_index, faiss_texts = build_faiss_index(
+    RAG_DOCS,
+    _client
+)
+
+st.write("FAISS BUILD FINISHED")
 
 # -----------------------------
 # Chatbot (RAG)
