@@ -176,6 +176,8 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 
+st.write("faiss_index exists")
+
 if _client and chat_query:
     if faiss_index is None:
         st.sidebar.error("RAG index unavailable.")
