@@ -205,10 +205,8 @@ if _client and chat_query:
                         "Users do not have access to the repository, source code, project files, notebooks, or local files. "
                         "Never tell users to search files, inspect code, open notebooks, view source code, browse the repository, or look through project files. "
                         "If information exists in the repository context, explain it directly to the user in plain language. "
-                        "If a user asks where to find something, direct them to locations within the application itself, such as the sidebar crop selectors, charts, modeling sections, comparison section,
-                        conclusions section, or project explanations. "
-                        "If users ask what crops are available, direct them to the 'Choose Your Crop' section and explain how to explore crop options within the application. Do not provide lists of crop names
-                        unless the user specifically requests examples. "
+                        "If a user asks where to find something, direct them to locations within the application itself, such as the sidebar crop selectors, charts, modeling sections, comparison section, conclusions section, or project explanations. "
+                        "If users ask what crops are available, direct them to the 'Choose Your Crop' section and explain how to explore crop options within the application. Do not provide lists of crop names unless the user specifically requests examples. "
                         "Encourage users to use the crop selection workflow and experiment with different crop names in the sidebar crop selectors. "
                         "If information is available in a chart, section, table, text area, or visualization within the application, direct users there instead of referring to repository contents. "
                         "Do not tell users to check files, notebooks, code, source code, repository contents, or project documents. "
