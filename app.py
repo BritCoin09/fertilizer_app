@@ -997,45 +997,7 @@ The FAOSTAT dataset contains hundreds of available crop types. Users can select 
     height=150,
     key="crop_selection_notes"
 )
-st.code("""
-sorted(crop_yield_only["Item"].unique())
 
-# ✏️ Type the crop you want to analyze
-crop = "Wheat"
-
-# Filter the dataset to the selected crop
-selected_crop = crop_yield_only[
-    crop_yield_only["Item"] == crop
-]
-
-selected_crop.head()
-""")
-
-with st.expander("🌾 Available Crops"):
-
-    available_crops = sorted(
-        crop_yield_only["Item"].unique()
-    )
-
-    st.write(
-        "Click a crop name below, then copy it into the sidebar crop selector."
-    )
-
-    cols = st.columns(3)
-
-    for i, crop_name in enumerate(available_crops):
-
-        with cols[i % 3]:
-            if st.button(
-                crop_name,
-                key=f"crop_button_{crop_name}"
-            ):
-                st.session_state["selected_crop_name"] = crop_name
-
-    if "selected_crop_name" in st.session_state:
-        st.success(
-            f"Selected Crop: {st.session_state['selected_crop_name']}"
-        )
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
@@ -1122,22 +1084,18 @@ else:
     plt.show()
     ''')
     fig, ax = plt.subplots(figsize=(10, 5))
+
+    fig.patch.set_facecolor(crop1_background)
+    ax.set_facecolor("white")
     
     ax.plot(
         df_crop_main["Year"],
         df_crop_main["Value_yield"],
+        color=crop1_color,
         linewidth=2.5
     )
     
-    ax.set_title(
-        f"Global {crop} Yield Over Time",
-        fontweight="bold"
-    )
-    
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Yield (kg/ha)")
-
-    ax.grid(True)
+    ax.grid(True, alpha=0.3)
 
     st.pyplot(fig)    
 
