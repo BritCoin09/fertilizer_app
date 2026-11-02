@@ -159,14 +159,14 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
     return index, texts
 
-    faiss_index = None
-    faiss_texts = None
+faiss_index = None
+faiss_texts = None
     
-    if _client:
-        faiss_index, faiss_texts = build_faiss_index(
-            RAG_DOCS,
-            _client
-        )
+if _client:
+    faiss_index, faiss_texts = build_faiss_index(
+        RAG_DOCS,
+        _client
+    )
 
 # -----------------------------
 # Chatbot (RAG)
