@@ -1094,19 +1094,19 @@ else:
     f"Global {crop} Yield Over Time",
     fontweight="bold",
     color="black"
-)
+    )
 
-ax.set_xlabel(
-    "Year",
-    color="black"
-)
-
-ax.set_ylabel(
-    "Yield (kg/ha)",
-    color="black"
-)
-
-ax.tick_params(colors="black")
+    ax.set_xlabel(
+        "Year",
+        color="black"
+    )
+    
+    ax.set_ylabel(
+        "Yield (kg/ha)",
+        color="black"
+    )
+    
+    ax.tick_params(colors="black")
 
 
     ax.grid(True, alpha=0.3)
