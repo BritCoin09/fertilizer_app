@@ -88,11 +88,6 @@ ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
 # -----------------------------
-st.sidebar.subheader("✏️ Crop Selection")
-
-crop = st.sidebar.text_input("Main crop name", value="Wheat")
-crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 
@@ -105,6 +100,36 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
+        
+st.sidebar.subheader("✏️ Crop Selection")
+
+crop = st.sidebar.text_input("Main crop name", value="Wheat")
+crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎨 Chart Colors")
+
+crop1_color = st.sidebar.color_picker(
+    "Crop 1 Color",
+    "#4A7C59"
+)
+
+crop2_color = st.sidebar.color_picker(
+    "Crop 2 Color",
+    "#B58A4A"
+)
+
+crop1_background = st.sidebar.color_picker(
+    "Crop 1 Background",
+    "#DDEEE3"
+)
+
+crop2_background = st.sidebar.color_picker(
+    "Crop 2 Background",
+    "#F5F1E6"
+)
+
+fert_background = "#DDEEE3"
 
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
@@ -175,8 +200,6 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🤖 Fertilizer Assistant")
 
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
-
-st.write("faiss_index exists")
 
 if _client and chat_query:
     if faiss_index is None:
@@ -820,7 +843,7 @@ fert_use_interpretation = st.text_area(
     value="""
 This line chart shows the long-term rise in global fertilizer application rates. Fertilizer use has increased steadily over the past several decades as global food production expanded, driven by population growth, intensification of agriculture, and the adoption of high-yield farming practices. This upward trend provides important context for understanding modern nutrient demand and environmental pressures.
 """,
-    height=180,
+    height=150,
     key="fert_use_interpretation"
 )
 
@@ -875,7 +898,7 @@ This created the steepest short-term decline in the dataset.
 
 This explains the upward trend after 2010.
 """,
-    height=1500,
+    height=1000,
     key="historical_context"
 )
 
@@ -925,7 +948,7 @@ reshape_notes = st.text_area(
     value="""
 I reshape the FAOSTAT dataset from wide to long format so each row represents a single crop-year observation. After converting the year column, I filter the dataset to include only yield values for all usable crops. This prepares the data so users can select any crop they want to analyze and supports global aggregation for visualization and modeling in later steps.
 """,
-    height=180,
+    height=150,
     key="reshape_notes"
 )
 st.code("""
@@ -978,8 +1001,6 @@ The FAOSTAT dataset contains hundreds of available crop types. Users can select 
 st.code("""
 sorted(crop_yield_only["Item"].unique())
 
-# ↑ Uncomment this line to preview all available crops in the dataset
-
 # ✏️ Type the crop you want to analyze
 crop = "Wheat"
 
@@ -991,6 +1012,31 @@ selected_crop = crop_yield_only[
 selected_crop.head()
 """)
 
+with st.expander("🌾 Available Crops"):
+
+    available_crops = sorted(
+        crop_yield_only["Item"].unique()
+    )
+
+    st.write(
+        "Click a crop name below, then copy it into the sidebar crop selector."
+    )
+
+    cols = st.columns(3)
+
+    for i, crop_name in enumerate(available_crops):
+
+        with cols[i % 3]:
+            if st.button(
+                crop_name,
+                key=f"crop_button_{crop_name}"
+            ):
+                st.session_state["selected_crop_name"] = crop_name
+
+    if "selected_crop_name" in st.session_state:
+        st.success(
+            f"Selected Crop: {st.session_state['selected_crop_name']}"
+        )
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
@@ -1003,7 +1049,7 @@ crop_modeling_intro = st.text_area(
     and yield. I then extend the model using polynomial features to capture curvature in the yield response. Finally, I identify the fertilizer level that maximizes predicted yield, providing a practical
     recommendation for optimal nutrient application.
     """,
-    height=250,
+    height=200,
     key="crop_modeling_intro"
 )
 st.subheader(f"Prepare {crop} Dataset for Regression")
@@ -1013,7 +1059,7 @@ crop_prep_notes = st.text_area(
     To prepare the {crop} modeling dataset, I merge global {crop} yield data with global fertilizer application data. This creates a single dataframe where each row represents a year, the corresponding {crop}
     yield, and the fertilizer applied that year. This merged dataset serves as the foundation for all three {crop} models that follow.
     """,
-    height=180,
+    height=150,
     key="crop_prep_notes"
 )
 st.code("""
