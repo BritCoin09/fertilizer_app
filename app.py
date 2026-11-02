@@ -217,8 +217,8 @@ if _client and chat_query:
 
 st.sidebar.subheader("✏️ Crop Selection")
 
-crop = st.sidebar.text_input("Main crop name", value="Wheat")
-crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
+crop = st.sidebar.text_input("Main crop name", value="{crop}")
+crop2 = st.sidebar.text_input("Second crop name (optional)", value="{crop2}")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
