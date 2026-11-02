@@ -124,9 +124,6 @@ for doc in REPO_FILES:
     RAG_DOCS.extend(
         chunk_text(doc, max_chars=3000)
     )
-    
-st.write("Repo Files:", len(REPO_FILES))
-st.write("Chunk Count:", len(RAG_DOCS))
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
@@ -161,18 +158,16 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
     index.add(vectors)
 
     return index, texts
-faiss_index = None
-faiss_texts = None
 
-if _client:
-    st.write("STARTING FAISS BUILD")
+    faiss_index = None
+    faiss_texts = None
+    
+    if _client:
+        faiss_index, faiss_texts = build_faiss_index(
+            RAG_DOCS,
+            _client
+        )
 
-    faiss_index, faiss_texts = build_faiss_index(
-        RAG_DOCS,
-        _client
-    )
-
-    st.write("FAISS BUILD FINISHED")
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
@@ -335,9 +330,6 @@ def build_crop_df(crop_name: str):
         suffixes=("_yield", "_fert")
     )
     return df_crop
-
-df_crop_main = build_crop_df(crop)
-df_crop_second = build_crop_df(crop2) if crop2 else None
 
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
