@@ -1070,11 +1070,6 @@ else:
     
     # Base plot (neutral default)
     plt.plot(df_crop["Year"], df_crop["Value_yield"], linewidth=2.5)
-    
-    # OPTIONAL: Customize colors for this plot
-    # line_color = "#B58A4A"
-    # background_color = "#EDE7D4"
-    # grid_color = "#CCCCCC"
 
     plt.title("Global {crop} Yield Over Time", fontweight="bold")
     plt.xlabel("Year")
@@ -1094,7 +1089,26 @@ else:
         color=crop1_color,
         linewidth=2.5
     )
-    
+
+    ax.set_title(
+    f"Global {crop} Yield Over Time",
+    fontweight="bold",
+    color="black"
+)
+
+ax.set_xlabel(
+    "Year",
+    color="black"
+)
+
+ax.set_ylabel(
+    "Yield (kg/ha)",
+    color="black"
+)
+
+ax.tick_params(colors="black")
+
+
     ax.grid(True, alpha=0.3)
 
     st.pyplot(fig)    
