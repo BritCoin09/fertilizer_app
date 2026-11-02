@@ -100,36 +100,6 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
-        
-st.sidebar.subheader("✏️ Crop Selection")
-
-crop = st.sidebar.text_input("Main crop name", value="Wheat")
-crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("🎨 Chart Colors")
-
-crop1_color = st.sidebar.color_picker(
-    "Crop 1 Color",
-    "#4A7C59"
-)
-
-crop2_color = st.sidebar.color_picker(
-    "Crop 2 Color",
-    "#B58A4A"
-)
-
-crop1_background = st.sidebar.color_picker(
-    "Crop 1 Background",
-    "#DDEEE3"
-)
-
-crop2_background = st.sidebar.color_picker(
-    "Crop 2 Background",
-    "#F5F1E6"
-)
-
-fert_background = "#DDEEE3"
 
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
@@ -245,6 +215,35 @@ if _client and chat_query:
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
 
+st.sidebar.subheader("✏️ Crop Selection")
+
+crop = st.sidebar.text_input("Main crop name", value="Wheat")
+crop2 = st.sidebar.text_input("Second crop name (optional)", value="Barley")
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎨 Chart Colors")
+
+crop1_color = st.sidebar.color_picker(
+    "Crop 1 Color",
+    "#4A7C59"
+)
+
+crop2_color = st.sidebar.color_picker(
+    "Crop 2 Color",
+    "#B58A4A"
+)
+
+crop1_background = st.sidebar.color_picker(
+    "Crop 1 Background",
+    "#DDEEE3"
+)
+
+crop2_background = st.sidebar.color_picker(
+    "Crop 2 Background",
+    "#F5F1E6"
+)
+
+fert_background = "#DDEEE3"
 # -----------------------------
 # Load data
 # -----------------------------
