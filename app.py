@@ -217,15 +217,11 @@ if _client and chat_query:
 
 st.sidebar.subheader("✏️ Crop Selection")
 
-crop = st.sidebar.text_input(
-    "Main crop name",
-    value="Wheat"
-)
+crop = st.session_state.get("crop", "Wheat")
+crop2 = st.session_state.get("crop2", "Barley")
 
-crop2 = st.sidebar.text_input(
-    "Second crop name (optional)",
-    value="Barley"
-)
+st.sidebar.write(f"🌾 Crop 1: {crop}")
+st.sidebar.write(f"🌾 Crop 2: {crop2}")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
@@ -783,7 +779,7 @@ top_n_interpretation = st.text_area(
     value="""
 The Netherlands appears at the top of the ranking due to its extremely intensive agricultural system. Despite its small land area, it is one of the world's largest agricultural exporters, relying on high-yield greenhouse production, dense livestock operations, and nutrient-intensive farming practices. These factors drive nitrogen application far above global averages.
 """,
-    height=180,
+    height=150,
     key="top_n_interpretation"
 )
 
@@ -925,7 +921,7 @@ crop_dataset_notes = st.text_area(
     value="""
 This dataset provides global crop yield information from FAOSTAT. I load it here to prepare the data for cleaning, filtering, and merging with fertilizer application data in the next steps. This forms the foundation for the crop-specific modeling and analysis that follows.
 """,
-    height=150,
+    height=140,
     key="crop_dataset_notes"
 )
 
@@ -999,12 +995,33 @@ st.subheader("Choose Your Crop")
 crop_selection_notes = st.text_area(
     "Crop Selection",
     value="""
-The FAOSTAT dataset contains hundreds of available crop types. Users can select any crop included in the dataset for analysis. The selected crop will be used throughout the remainder of the project for visualization, modeling, and optimization.
+The FAOSTAT dataset includes a diverse collection of agricultural products ranging from staple crops such as wheat, barley, rice, and maize to fruits, vegetables, legumes, and fiber crops. Select an item below to generate custom visualizations, predictive models, and fertilizer optimization insights.
 """,
     height=150,
     key="crop_selection_notes"
 )
 
+st.info(
+    "Select two items below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
+)
+
+st.subheader("🌾 Select Crops for Comparison")
+
+available_crops = sorted(crop_yield_only["Item"].unique())
+
+selected_crops = st.multiselect(
+    "Choose exactly 2 crops",
+    available_crops,
+    default=[
+        st.session_state.get("crop", "Wheat"),
+        st.session_state.get("crop2", "Barley")
+    ],
+    max_selections=2
+)
+
+if len(selected_crops) == 2:
+    st.session_state.crop = selected_crops[0]
+    st.session_state.crop2 = selected_crops[1]
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
