@@ -215,16 +215,6 @@ if _client and chat_query:
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
 
-st.sidebar.subheader("🌾 Crop Selection")
-
-crop = st.session_state.get("crop", "Wheat")
-crop2 = st.session_state.get("crop2", None)
-
-st.sidebar.write(f"Crop 1: {crop}")
-
-if crop2:
-    st.sidebar.write(f"Crop 2: {crop2}")
-
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
 
@@ -233,20 +223,24 @@ crop1_color = st.sidebar.color_picker(
     "#4A7C59"
 )
 
-crop2_color = st.sidebar.color_picker(
-    "Crop 2 Color",
-    "#B58A4A"
-)
-
 crop1_background = st.sidebar.color_picker(
     "Crop 1 Background",
     "#DDEEE3"
 )
 
-crop2_background = st.sidebar.color_picker(
-    "Crop 2 Background",
-    "#F5F1E6"
-)
+if crop2:
+    crop2_color = st.sidebar.color_picker(
+        "Crop 2 Color",
+        "#B58A4A"
+    )
+
+    crop2_background = st.sidebar.color_picker(
+        "Crop 2 Background",
+        "#F5F1E6"
+    )
+else:
+    crop2_color = None
+    crop2_background = None
 
 fert_background = "#DDEEE3"
 # -----------------------------
@@ -993,7 +987,7 @@ global_yield = (
 df_long
 """)
 
-st.subheader("Choose Your Crop")
+st.subheader("Choose Your Crop(s)")
 crop_selection_notes = st.text_area(
     "Crop Selection",
     value="""
@@ -1004,20 +998,25 @@ The FAOSTAT dataset includes a diverse collection of agricultural products rangi
 )
 
 st.info(
-    "Select two items below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
+    "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
 )
 
-st.subheader("🌾 Select Crops for Comparison")
+st.subheader("🌾 Select Crop(s) for Analysis")
 
 available_crops = sorted(crop_yield_only["Item"].unique())
 
 selected_crops = st.multiselect(
     "Choose up to 2 crops",
     available_crops,
-    default=["Wheat", "Barley"],
+    default=[
+        c for c in [
+            st.session_state.get("crop", "Wheat"),
+            st.session_state.get("crop2")
+        ]
+        if c is not None
+    ],
     max_selections=2
 )
-
 if len(selected_crops) == 0:
     st.warning("⚠️ Please select at least one crop.")
     st.stop()
@@ -1169,14 +1168,14 @@ else:
     """)
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    fig.patch.set_facecolor("#DDEEE3")
+    fig.patch.set_facecolor(crop1_background)
     
     ax.set_facecolor("white")
     
     plt.scatter(
         df_crop_main["Value_fert"],
         df_crop_main["Value_yield"],
-        color="#B58A4A",
+        color=crop1_color,
         alpha=0.85,
         s=85,
         edgecolor="black",
@@ -1204,7 +1203,7 @@ else:
     )
     
     for spine in ax.spines.values():
-        spine.set_color("#A8C3B0")
+        spine.set_color(crop1_color)
         spine.set_linewidth(1.2)
     
     plt.title(
@@ -1344,13 +1343,13 @@ st.subheader(
 
 fig, ax = plt.subplots(figsize=(10, 6))
 
-fig.patch.set_facecolor("#DDEEE3")
+fig.patch.set_facecolor(crop1_background)
 ax.set_facecolor("white")
 
 ax.scatter(
     y_test,
     y_pred,
-    color="#B58A4A",
+    color=crop1_color,
     edgecolor="black",
     s=85
 )
@@ -1358,7 +1357,7 @@ ax.scatter(
 ax.plot(
     [y_test.min(), y_test.max()],
     [y_test.min(), y_test.max()],
-    color="#7C6A4A",
+    color=crop1_color,
     linewidth=2.2
 )
 
@@ -1518,13 +1517,13 @@ fig, ax = plt.subplots(
     figsize=(10, 6)
 )
 
-fig.patch.set_facecolor("#DDEEE3")
+fig.patch.set_facecolor(crop1_background)
 ax.set_facecolor("white")
 
 ax.scatter(
     y_test,
     y_pred2,
-    color="#B58A4A",
+    color=crop1_color,
     edgecolor="black",
     s=85
 )
@@ -1532,7 +1531,7 @@ ax.scatter(
 ax.plot(
     [y_test.min(), y_test.max()],
     [y_test.min(), y_test.max()],
-    color="#7C6A4A",
+    color=crop1_color,
     linewidth=2.2
 )
 
@@ -1561,7 +1560,7 @@ ax.legend(
     ],
     frameon=True,
     facecolor="white",
-    edgecolor="#A8C3B0"
+    edgecolor=crop1_color
 )
 
 plt.tight_layout()
@@ -1670,13 +1669,13 @@ fig, ax = plt.subplots(
     figsize=(10, 6)
 )
 
-fig.patch.set_facecolor("#DDEEE3")
+fig.patch.set_facecolor(crop1_background)
 ax.set_facecolor("white")
 
 ax.plot(
     x_range,
     y_curve,
-    color="#7C6A4A",
+    color=crop1_color,
     linewidth=2.5,
     label="Polynomial Curve"
 )
@@ -1684,7 +1683,7 @@ ax.plot(
 ax.scatter(
     df_crop_main["Value_fert"],
     df_crop_main["Value_yield"],
-    color="#B58A4A",
+    color=crop1_color,
     edgecolor="black",
     s=85,
     alpha=0.8,
@@ -1694,7 +1693,7 @@ ax.scatter(
 ax.scatter(
     x_opt,
     y_opt,
-    color="#4A7C59",
+    color=crop1_color,
     s=120,
     edgecolor="black",
     zorder=5,
@@ -1722,7 +1721,7 @@ ax.grid(
 ax.legend(
     frameon=True,
     facecolor="white",
-    edgecolor="#A8C3B0"
+    edgecolor=crop1_color
 )
 
 plt.tight_layout()
@@ -1755,1068 +1754,1062 @@ Together, these models demonstrate how fertilizer influences {crop} productivity
     key="crop_summary"
 )
 
-# -----------------------------
-# SECTION 4: SECOND CROP ANALYSIS
-# -----------------------------
-
-st.header(f"🌱 Section 4: {crop2} Analysis")
-
-crop2_intro = st.text_area(
-    "Section Introduction",
-    value=f"""
-This section applies the same modeling workflow to {crop2}. By keeping the methodology consistent, the results from both crops can be compared directly to evaluate how fertilizer influences yield across different agricultural systems.
-""",
-    height=180,
-    key="crop2_intro"
-)
-
-st.subheader(f"Prepare {crop2} Dataset for Modeling")
-
-crop2_prep_notes = st.text_area(
-    "Dataset Preparation",
-    value=f"""
-This dataset merges global {crop2} yield with global fertilizer use by year. It mirrors the {crop} workflow so both crops can be compared consistently.
-""",
-    height=140,
-    key="crop2_prep_notes"
-)
-
-st.code("""
-crop2 = "Your_2nd_Crop_here"
-
-selected_crop2 = crop_yield_only[
-    crop_yield_only["Item"] == crop2
-]
-
-# Global yield for crop2
-global_crop2 = (
-    selected_crop2.groupby("Year")["Value"]
-    .mean()
-    .reset_index()
-)
-
-# Add crop name column
-global_crop2["Crop"] = crop2
-
-# Merge with global fertilizer
-df_crop2 = pd.merge(
-    global_crop2,
-    global_fert,
-    on="Year",
-    how="inner",
-    suffixes=("_yield", "_fert")
-)
-
-df_crop2.head()
-""")
-
-st.dataframe(
-    df_crop_second.head()
-)
-
-# -----------------------------
-# YIELD OVER TIME
-# -----------------------------
-
-st.subheader(f"{crop2} Yield Over Time")
-
-crop2_yield_notes = st.text_area(
-    "Yield Trend Explanation",
-    value=f"""
-This plot shows how global {crop2} yield has changed across decades.
-""",
-    height=120,
-    key="crop2_yield_notes"
-)
-
-st.code("""
-plt.figure(figsize=(10,5))
-
-# OPTIONAL: Customize colors
-# line_color = "#d5b37e"
-# background_color = "#D5B37E"
-
-plt.plot(
-    df_crop2["Year"],
-    df_crop2["Value_yield"],
-    color=line_color if 'line_color' in globals() else "#d5b37e",
-    linewidth=2.5
-)
-
-plt.gcf().patch.set_facecolor(
-    background_color if 'background_color' in globals() else "#D5B37E"
-)
-
-plt.title(
-    f"Global {crop2} Yield Over Time",
-    fontweight="bold"
-)
-
-plt.xlabel("Year")
-plt.ylabel("Yield (kg/ha)")
-plt.grid(True)
-
-plt.show()
-""")
-
-fig, ax = plt.subplots(figsize=(10, 5))
-
-fig.patch.set_facecolor("#D5B37E")
-
-ax.plot(
-    df_crop_second["Year"],
-    df_crop_second["Value_yield"],
-    color="#d5b37e",
-    linewidth=2.5
-)
-
-ax.set_title(
-    f"Global {crop2} Yield Over Time",
-    fontweight="bold"
-)
-
-ax.set_xlabel("Year")
-ax.set_ylabel("Yield (kg/ha)")
-
-ax.grid(True)
-
-st.pyplot(fig)
-
-crop2_yield_interpretation = st.text_area(
-    "Interpretation",
-    value=f"""
-Describe the long-term yield trend for {crop2}. Discuss whether yields increased steadily, experienced periods of stagnation, or changed rapidly during certain decades. Consider how advances in agricultural practices, genetics, and fertilizer use may have influenced these trends.
-""",
-    height=220,
-    key="crop2_yield_interpretation"
-)
-
-# -----------------------------
-# MODEL 1: LINEAR REGRESSION
-# -----------------------------
-
-st.subheader(f"{crop2} Model 1: Linear Regression")
-
-crop2_linear_intro = st.text_area(
-    "Model 1 Introduction",
-    value=f"""
-This model establishes the baseline relationship between fertilizer use and {crop2} yield. It measures how much yield increases for each additional kilogram of fertilizer applied.
-""",
-    height=140,
-    key="crop2_linear_intro"
-)
-
-st.code("""
-# Features and target
-X2 = df_crop2[["Value_fert"]]
-y2 = df_crop2["Value_yield"]
-
-# Train-test split
-X2_train, X2_test, y2_train, y2_test = train_test_split(
-    X2, y2, test_size=0.2, random_state=42
-)
-
-# Model
-model2_1 = LinearRegression()
-model2_1.fit(X2_train, y2_train)
-
-# Predictions
-y2_pred = model2_1.predict(X2_test)
-
-# Metrics
-rmse2_1 = np.sqrt(mean_squared_error(y2_test, y2_pred))
-r2_2_1 = r2_score(y2_test, y2_pred)
-""")
-
-# Features and target
-X2 = df_crop_second[["Value_fert"]]
-y2 = df_crop_second["Value_yield"]
-
-# Train-test split
-X2_train, X2_test, y2_train, y2_test = train_test_split(
-    X2,
-    y2,
-    test_size=0.2,
-    random_state=42
-)
-
-# Model
-model2_1 = LinearRegression()
-
-model2_1.fit(
-    X2_train,
-    y2_train
-)
-
-# Predictions
-y2_pred = model2_1.predict(
-    X2_test
-)
-
-# Metrics
-rmse2_1 = np.sqrt(
-    mean_squared_error(
+if crop2 and df_crop_second is not None:
+    
+    # -----------------------------
+    # SECTION 4: SECOND CROP ANALYSIS
+    # -----------------------------
+    
+    st.header(f"🌱 Section 4: {crop2} Analysis")
+    
+    crop2_intro = st.text_area(
+        "Section Introduction",
+        value=f"""
+    This section applies the same modeling workflow to {crop2}. By keeping the methodology consistent, the results from both crops can be compared directly to evaluate how fertilizer influences yield across different agricultural systems.
+    """,
+        height=180,
+        key="crop2_intro"
+    )
+    
+    st.subheader(f"Prepare {crop2} Dataset for Modeling")
+    
+    crop2_prep_notes = st.text_area(
+        "Dataset Preparation",
+        value=f"""
+    This dataset merges global {crop2} yield with global fertilizer use by year. It mirrors the {crop} workflow so both crops can be compared consistently.
+    """,
+        height=140,
+        key="crop2_prep_notes"
+    )
+    
+    st.code("""
+    crop2 = "Your_2nd_Crop_here"
+    
+    selected_crop2 = crop_yield_only[
+        crop_yield_only["Item"] == crop2
+    ]
+    
+    # Global yield for crop2
+    global_crop2 = (
+        selected_crop2.groupby("Year")["Value"]
+        .mean()
+        .reset_index()
+    )
+    
+    # Add crop name column
+    global_crop2["Crop"] = crop2
+    
+    # Merge with global fertilizer
+    df_crop2 = pd.merge(
+        global_crop2,
+        global_fert,
+        on="Year",
+        how="inner",
+        suffixes=("_yield", "_fert")
+    )
+    
+    df_crop2.head()
+    """)
+    
+    st.dataframe(
+        df_crop_second.head()
+    )
+    
+    # -----------------------------
+    # YIELD OVER TIME
+    # -----------------------------
+    
+    st.subheader(f"{crop2} Yield Over Time")
+    
+    crop2_yield_notes = st.text_area(
+        "Yield Trend Explanation",
+        value=f"""
+    This plot shows how global {crop2} yield has changed across decades.
+    """,
+        height=120,
+        key="crop2_yield_notes"
+    )
+    
+    st.code("""
+    plt.figure(figsize=(10,5))
+    
+    plt.plot(
+        df_crop2["Year"],
+        df_crop2["Value_yield"],
+        color=line_color if 'line_color' in globals() else crop2_color,
+        linewidth=2.5
+    )
+    
+    plt.gcf().patch.set_facecolor(
+        background_color if 'background_color' in globals() else crop2_background
+    )
+    
+    plt.title(
+        f"Global {crop2} Yield Over Time",
+        fontweight="bold"
+    )
+    
+    plt.xlabel("Year")
+    plt.ylabel("Yield (kg/ha)")
+    plt.grid(True)
+    
+    plt.show()
+    """)
+    
+    fig, ax = plt.subplots(figsize=(10, 5))
+    
+    fig.patch.set_facecolor(crop2_background)
+    
+    ax.plot(
+        df_crop_second["Year"],
+        df_crop_second["Value_yield"],
+        color=crop2_color,
+        linewidth=2.5
+    )
+    
+    ax.set_title(
+        f"Global {crop2} Yield Over Time",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Yield (kg/ha)")
+    
+    ax.grid(True)
+    
+    st.pyplot(fig)
+    
+    crop2_yield_interpretation = st.text_area(
+        "Interpretation",
+        value=f"""
+    Describe the long-term yield trend for {crop2}. Discuss whether yields increased steadily, experienced periods of stagnation, or changed rapidly during certain decades. Consider how advances in agricultural practices, genetics, and fertilizer use may have influenced these trends.
+    """,
+        height=220,
+        key="crop2_yield_interpretation"
+    )
+    
+    # -----------------------------
+    # MODEL 1: LINEAR REGRESSION
+    # -----------------------------
+    
+    st.subheader(f"{crop2} Model 1: Linear Regression")
+    
+    crop2_linear_intro = st.text_area(
+        "Model 1 Introduction",
+        value=f"""
+    This model establishes the baseline relationship between fertilizer use and {crop2} yield. It measures how much yield increases for each additional kilogram of fertilizer applied.
+    """,
+        height=140,
+        key="crop2_linear_intro"
+    )
+    
+    st.code("""
+    # Features and target
+    X2 = df_crop2[["Value_fert"]]
+    y2 = df_crop2["Value_yield"]
+    
+    # Train-test split
+    X2_train, X2_test, y2_train, y2_test = train_test_split(
+        X2, y2, test_size=0.2, random_state=42
+    )
+    
+    # Model
+    model2_1 = LinearRegression()
+    model2_1.fit(X2_train, y2_train)
+    
+    # Predictions
+    y2_pred = model2_1.predict(X2_test)
+    
+    # Metrics
+    rmse2_1 = np.sqrt(mean_squared_error(y2_test, y2_pred))
+    r2_2_1 = r2_score(y2_test, y2_pred)
+    """)
+    
+    # Features and target
+    X2 = df_crop_second[["Value_fert"]]
+    y2 = df_crop_second["Value_yield"]
+    
+    # Train-test split
+    X2_train, X2_test, y2_train, y2_test = train_test_split(
+        X2,
+        y2,
+        test_size=0.2,
+        random_state=42
+    )
+    
+    # Model
+    model2_1 = LinearRegression()
+    
+    model2_1.fit(
+        X2_train,
+        y2_train
+    )
+    
+    # Predictions
+    y2_pred = model2_1.predict(
+        X2_test
+    )
+    
+    # Metrics
+    rmse2_1 = np.sqrt(
+        mean_squared_error(
+            y2_test,
+            y2_pred
+        )
+    )
+    
+    r2_2_1 = r2_score(
         y2_test,
         y2_pred
     )
-)
-
-r2_2_1 = r2_score(
-    y2_test,
-    y2_pred
-)
-
-st.write("### Model Results")
-
-st.metric(
-    "Coefficient (Slope)",
-    f"{model2_1.coef_[0]:.2f}"
-)
-
-st.metric(
-    "Intercept",
-    f"{model2_1.intercept_:.2f}"
-)
-
-col1, col2 = st.columns(2)
-
-with col1:
+    
+    st.write("### Model Results")
+    
     st.metric(
-        "RMSE",
-        f"{rmse2_1:.2f}"
+        "Coefficient (Slope)",
+        f"{model2_1.coef_[0]:.2f}"
     )
-
-with col2:
+    
     st.metric(
-        "R² Score",
-        f"{r2_2_1:.3f}"
+        "Intercept",
+        f"{model2_1.intercept_:.2f}"
     )
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric(
+            "RMSE",
+            f"{rmse2_1:.2f}"
+        )
+    
+    with col2:
+        st.metric(
+            "R² Score",
+            f"{r2_2_1:.3f}"
+        )
+    
+    # -----------------------------
+    # ACTUAL VS PREDICTED
+    # -----------------------------
+    
+    st.subheader(
+        f"{crop2} Model 1: Actual vs Predicted"
+    )
+    
+    actual_pred_notes = st.text_area(
+        "Chart Explanation",
+        value=f"""
+    This chart compares the model's predictions to real yield values. It shows how well a simple linear model captures the fertilizer-yield relationship.
+    """,
+        height=120,
+        key="crop2_actual_pred_notes"
+    )
+    
+    st.code("""
+    plt.figure(figsize=(10,6))
+    
+    plt.scatter(
+        y2_test,
+        y2_pred
+    )
+    
+    plt.show()
+    """)
+    
+    fig, ax = plt.subplots(
+        figsize=(10, 6)
+    )
+    
+    fig.patch.set_facecolor(crop2_background)
+    
+    ax.set_facecolor("white")
+    
+    ax.scatter(
+        y2_test,
+        y2_pred,
+        color=crop2_color,
+        edgecolor="black",
+        s=85
+    )
+    
+    ax.plot(
+        [y2_test.min(), y2_test.max()],
+        [y2_test.min(), y2_test.max()],
+        color=crop2_color,
+        linewidth=2.2
+    )
+    
+    ax.set_title(
+        f"{crop2} Model 1 (Linear): Actual vs Predicted Yield",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel("Actual Yield (kg/ha)")
+    ax.set_ylabel("Predicted Yield (kg/ha)")
+    
+    ax.grid(
+        True,
+        alpha=0.3
+    )
+    
+    ax.legend(
+        ["Perfect Prediction Line", "Model Predictions"],
+        frameon=True,
+        facecolor="white",
+        edgecolor=crop2_color
+    )
+    
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    
+    crop2_model1_interpretation = st.text_area(
+        "Model 1 Explanation",
+        value=f"""
+    Discuss how closely the model's predictions align with actual {crop2} yields. Explain what the RMSE and R² values indicate about model performance and whether fertilizer use alone appears to be a strong predictor of yield.
+    """,
+        height=220,
+        key="crop2_model1_interpretation"
+    )
+    
+    # -----------------------------
+    # YIELD VS FERTILIZER USE
+    # -----------------------------
+    
+    st.subheader(f"{crop2} Yield vs Fertilizer Use")
+    
+    crop2_fert_notes = st.text_area(
+        "Yield vs Fertilizer Overview",
+        value=f"""
+    This scatter plot visualizes the relationship between fertilizer application and {crop2} yield.
+    """,
+        height=120,
+        key="crop2_fert_notes"
+    )
+    
+    st.code("""
+    plt.figure(figsize=(10,6))
+    
+    # Outer background
+    plt.gcf().patch.set_facecolor(
+        crop1_background
+    )
+    
+    # Inner background
+    ax = plt.gca()
+    ax.set_facecolor("white")
 
-# -----------------------------
-# ACTUAL VS PREDICTED
-# -----------------------------
-
-st.subheader(
-    f"{crop2} Model 1: Actual vs Predicted"
-)
-
-actual_pred_notes = st.text_area(
-    "Chart Explanation",
-    value=f"""
-This chart compares the model's predictions to real yield values. It shows how well a simple linear model captures the fertilizer-yield relationship.
-""",
-    height=120,
-    key="crop2_actual_pred_notes"
-)
-
-st.code("""
-plt.figure(figsize=(10,6))
-
-plt.scatter(
-    y2_test,
-    y2_pred
-)
-
-plt.show()
-""")
-
-fig, ax = plt.subplots(
-    figsize=(10, 6)
-)
-
-fig.patch.set_facecolor("#F5F1E6")
-
-ax.set_facecolor("white")
-
-ax.scatter(
-    y2_test,
-    y2_pred,
-    color="#d5b37e",
-    edgecolor="black",
-    s=85
-)
-
-ax.plot(
-    [y2_test.min(), y2_test.max()],
-    [y2_test.min(), y2_test.max()],
-    color="#a68a5b",
-    linewidth=2.2
-)
-
-ax.set_title(
-    f"{crop2} Model 1 (Linear): Actual vs Predicted Yield",
-    fontweight="bold"
-)
-
-ax.set_xlabel("Actual Yield (kg/ha)")
-ax.set_ylabel("Predicted Yield (kg/ha)")
-
-ax.grid(
-    True,
-    alpha=0.3
-)
-
-ax.legend(
-    ["Perfect Prediction Line", "Model Predictions"],
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-crop2_model1_interpretation = st.text_area(
-    "Model 1 Explanation",
-    value=f"""
-Discuss how closely the model's predictions align with actual {crop2} yields. Explain what the RMSE and R² values indicate about model performance and whether fertilizer use alone appears to be a strong predictor of yield.
-""",
-    height=220,
-    key="crop2_model1_interpretation"
-)
-
-# -----------------------------
-# YIELD VS FERTILIZER USE
-# -----------------------------
-
-st.subheader(f"{crop2} Yield vs Fertilizer Use")
-
-crop2_fert_notes = st.text_area(
-    "Yield vs Fertilizer Overview",
-    value=f"""
-This scatter plot visualizes the relationship between fertilizer application and {crop2} yield.
-""",
-    height=120,
-    key="crop2_fert_notes"
-)
-
-st.code("""
-plt.figure(figsize=(10,6))
-
-# OPTIONAL: Customize colors
-# scatter_color = "#d5b37e"
-# trendline_color = "#a68a5b"
-# background_color = "#DDEEE3"
-
-# Outer background
-plt.gcf().patch.set_facecolor(
-    background_color if 'background_color' in globals() else "#DDEEE3"
-)
-
-# Inner background
-ax = plt.gca()
-ax.set_facecolor("white")
-
-# Scatter points
-plt.scatter(
-    df_crop2["Value_fert"],
-    df_crop2["Value_yield"],
-    color=scatter_color if 'scatter_color' in globals() else "#d5b37e",
-    alpha=0.85,
-    s=85,
-    edgecolor="black",
-    linewidth=0.5,
-    label=f"{crop2} Data Points"
-)
-
-# Trendline
-x = np.linspace(
-    df_crop2["Value_fert"].min(),
-    df_crop2["Value_fert"].max(),
-    100
-)
-
-m, b = np.polyfit(
-    df_crop2["Value_fert"],
-    df_crop2["Value_yield"],
-    1
-)
-
-plt.plot(
-    x,
-    m*x + b,
-    color=trendline_color if 'trendline_color' in globals() else "#a68a5b",
-    linewidth=2.2,
-    alpha=0.8,
-    label="Trendline"
-)
-
-plt.legend(
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-for spine in ax.spines.values():
-    spine.set_color("#A8C3B0")
-    spine.set_linewidth(1.2)
-
-plt.title(
-    f"Global {crop2} Yield vs Fertilizer Use",
-    fontweight="bold"
-)
-
-plt.xlabel("Fertilizer Use (kg/ha)")
-plt.ylabel("Yield (kg/ha)")
-
-plt.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-""")
-
-fig, ax = plt.subplots(figsize=(10, 6))
-
-fig.patch.set_facecolor("#DDEEE3")
-
-ax.set_facecolor("white")
-
-ax.scatter(
-    df_crop_second["Value_fert"],
-    df_crop_second["Value_yield"],
-    color="#d5b37e",
-    alpha=0.85,
-    s=85,
-    edgecolor="black",
-    linewidth=0.5,
-    label=f"{crop2} Data Points"
-)
-
-x = np.linspace(
-    df_crop_second["Value_fert"].min(),
-    df_crop_second["Value_fert"].max(),
-    100
-)
-
-m, b = np.polyfit(
-    df_crop_second["Value_fert"],
-    df_crop_second["Value_yield"],
-    1
-)
-
-ax.plot(
-    x,
-    m * x + b,
-    color="#a68a5b",
-    linewidth=2.2,
-    alpha=0.8,
-    label="Trendline"
-)
-
-ax.legend(
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-for spine in ax.spines.values():
-    spine.set_color("#A8C3B0")
-    spine.set_linewidth(1.2)
-
-ax.set_title(
-    f"Global {crop2} Yield vs Fertilizer Use",
-    fontweight="bold"
-)
-
-ax.set_xlabel("Fertilizer Use (kg/ha)")
-ax.set_ylabel("Yield (kg/ha)")
-
-ax.grid(True, alpha=0.3)
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-crop2_yield_vs_fert_interpretation = st.text_area(
-    "Yield vs Fertilizer Interpretation",
-    value=f"""
-Explain the relationship between fertilizer use and {crop2} yield. Discuss whether higher fertilizer application generally corresponds with higher yields, identify any visible trends in the data, and note whether the relationship appears strong, weak, linear, or nonlinear.
-""",
-    height=220,
-    key="crop2_yield_vs_fert_interpretation"
-)
-
-# -----------------------------
-# MODEL 2: POLYNOMIAL REGRESSION
-# -----------------------------
-
-st.subheader(f"{crop2} Model 2: Polynomial Regression")
-
-crop2_poly_intro = st.text_area(
-    "Model 2 Introduction",
-    value=f"""
-Polynomial regression captures the curved, diminishing-returns pattern in {crop2} yield. This model better reflects real agronomic behavior than a straight line.
-""",
-    height=140,
-    key="crop2_poly_intro"
-)
-
-st.code("""
-# Features and target
-X2 = df_crop2[["Value_fert"]]
-y2 = df_crop2["Value_yield"]
-
-# Polynomial transformation
-poly2 = PolynomialFeatures(
-    degree=2,
-    include_bias=False
-)
-
-X2_poly = poly2.fit_transform(X2)
-
-# Train-test split
-X2_train, X2_test, y2_train, y2_test = train_test_split(
-    X2_poly,
-    y2,
-    test_size=0.2,
-    random_state=42
-)
-
-# Model
-model2_2 = LinearRegression()
-
-model2_2.fit(X2_train, y2_train)
-
-# Predictions
-y2_pred2 = model2_2.predict(X2_test)
-
-# Metrics
-rmse2_2 = np.sqrt(
-    mean_squared_error(
+    
+    # Scatter points
+    plt.scatter(
+        df_crop2["Value_fert"],
+        df_crop2["Value_yield"],
+        color=scatter_color if 'scatter_color' in globals() else crop2_color,
+        alpha=0.85,
+        s=85,
+        edgecolor="black",
+        linewidth=0.5,
+        label=f"{crop2} Data Points"
+    )
+    
+    # Trendline
+    x = np.linspace(
+        df_crop2["Value_fert"].min(),
+        df_crop2["Value_fert"].max(),
+        100
+    )
+    
+    m, b = np.polyfit(
+        df_crop2["Value_fert"],
+        df_crop2["Value_yield"],
+        1
+    )
+    
+    plt.plot(
+        x,
+        m*x + b,
+        color=trendline_color if 'trendline_color' in globals() else crop2_color,
+        linewidth=2.2,
+        alpha=0.8,
+        label="Trendline"
+    )
+    
+    plt.legend(
+        frameon=True,
+        facecolor="white",
+        edgecolor=crop2_color
+    )
+    
+    for spine in ax.spines.values():
+        spine.set_color(crop2_color)
+        spine.set_linewidth(1.2)
+    
+    plt.title(
+        f"Global {crop2} Yield vs Fertilizer Use",
+        fontweight="bold"
+    )
+    
+    plt.xlabel("Fertilizer Use (kg/ha)")
+    plt.ylabel("Yield (kg/ha)")
+    
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+    """)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    fig.patch.set_facecolor(crop2_background)
+    
+    ax.set_facecolor("white")
+    
+    ax.scatter(
+        df_crop_second["Value_fert"],
+        df_crop_second["Value_yield"],
+        color=crop2_color,
+        alpha=0.85,
+        s=85,
+        edgecolor="black",
+        linewidth=0.5,
+        label=f"{crop2} Data Points"
+    )
+    
+    x = np.linspace(
+        df_crop_second["Value_fert"].min(),
+        df_crop_second["Value_fert"].max(),
+        100
+    )
+    
+    m, b = np.polyfit(
+        df_crop_second["Value_fert"],
+        df_crop_second["Value_yield"],
+        1
+    )
+    
+    ax.plot(
+        x,
+        m * x + b,
+        color=crop2_color,
+        linewidth=2.2,
+        alpha=0.8,
+        label="Trendline"
+    )
+    
+    ax.legend(
+        frameon=True,
+        facecolor="white",
+        edgecolor=crop2_color
+    )
+    
+    for spine in ax.spines.values():
+        spine.set_color(crop2_color)
+        spine.set_linewidth(1.2)
+    
+    ax.set_title(
+        f"Global {crop2} Yield vs Fertilizer Use",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel("Fertilizer Use (kg/ha)")
+    ax.set_ylabel("Yield (kg/ha)")
+    
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    
+    crop2_yield_vs_fert_interpretation = st.text_area(
+        "Yield vs Fertilizer Interpretation",
+        value=f"""
+    Explain the relationship between fertilizer use and {crop2} yield. Discuss whether higher fertilizer application generally corresponds with higher yields, identify any visible trends in the data, and note whether the relationship appears strong, weak, linear, or nonlinear.
+    """,
+        height=220,
+        key="crop2_yield_vs_fert_interpretation"
+    )
+    
+    # -----------------------------
+    # MODEL 2: POLYNOMIAL REGRESSION
+    # -----------------------------
+    
+    st.subheader(f"{crop2} Model 2: Polynomial Regression")
+    
+    crop2_poly_intro = st.text_area(
+        "Model 2 Introduction",
+        value=f"""
+    Polynomial regression captures the curved, diminishing-returns pattern in {crop2} yield. This model better reflects real agronomic behavior than a straight line.
+    """,
+        height=140,
+        key="crop2_poly_intro"
+    )
+    
+    st.code("""
+    # Features and target
+    X2 = df_crop2[["Value_fert"]]
+    y2 = df_crop2["Value_yield"]
+    
+    # Polynomial transformation
+    poly2 = PolynomialFeatures(
+        degree=2,
+        include_bias=False
+    )
+    
+    X2_poly = poly2.fit_transform(X2)
+    
+    # Train-test split
+    X2_train, X2_test, y2_train, y2_test = train_test_split(
+        X2_poly,
+        y2,
+        test_size=0.2,
+        random_state=42
+    )
+    
+    # Model
+    model2_2 = LinearRegression()
+    
+    model2_2.fit(X2_train, y2_train)
+    
+    # Predictions
+    y2_pred2 = model2_2.predict(X2_test)
+    
+    # Metrics
+    rmse2_2 = np.sqrt(
+        mean_squared_error(
+            y2_test,
+            y2_pred2
+        )
+    )
+    
+    r2_2_2 = r2_score(
         y2_test,
         y2_pred2
     )
-)
-
-r2_2_2 = r2_score(
-    y2_test,
-    y2_pred2
-)
-""")
-
-X2 = df_crop_second[["Value_fert"]]
-y2 = df_crop_second["Value_yield"]
-
-poly2 = PolynomialFeatures(
-    degree=2,
-    include_bias=False
-)
-
-X2_poly = poly2.fit_transform(X2)
-
-X2_train, X2_test, y2_train, y2_test = train_test_split(
-    X2_poly,
-    y2,
-    test_size=0.2,
-    random_state=42
-)
-
-model2_2 = LinearRegression()
-
-model2_2.fit(
-    X2_train,
-    y2_train
-)
-
-y2_pred2 = model2_2.predict(
-    X2_test
-)
-
-rmse2_2 = np.sqrt(
-    mean_squared_error(
+    """)
+    
+    X2 = df_crop_second[["Value_fert"]]
+    y2 = df_crop_second["Value_yield"]
+    
+    poly2 = PolynomialFeatures(
+        degree=2,
+        include_bias=False
+    )
+    
+    X2_poly = poly2.fit_transform(X2)
+    
+    X2_train, X2_test, y2_train, y2_test = train_test_split(
+        X2_poly,
+        y2,
+        test_size=0.2,
+        random_state=42
+    )
+    
+    model2_2 = LinearRegression()
+    
+    model2_2.fit(
+        X2_train,
+        y2_train
+    )
+    
+    y2_pred2 = model2_2.predict(
+        X2_test
+    )
+    
+    rmse2_2 = np.sqrt(
+        mean_squared_error(
+            y2_test,
+            y2_pred2
+        )
+    )
+    
+    r2_2_2 = r2_score(
         y2_test,
         y2_pred2
     )
-)
-
-r2_2_2 = r2_score(
-    y2_test,
-    y2_pred2
-)
-
-st.write("### Model Results")
-
-st.write(
-    f"**Coefficients:** {model2_2.coef_}"
-)
-
-st.write(
-    f"**Intercept:** {model2_2.intercept_:.2f}"
-)
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric(
-        "RMSE",
-        f"{rmse2_2:.2f}"
+    
+    st.write("### Model Results")
+    
+    st.write(
+        f"**Coefficients:** {model2_2.coef_}"
     )
-
-with col2:
-    st.metric(
-        "R² Score",
-        f"{r2_2_2:.3f}"
+    
+    st.write(
+        f"**Intercept:** {model2_2.intercept_:.2f}"
     )
-
-# -----------------------------
-# ACTUAL VS PREDICTED
-# -----------------------------
-
-st.subheader(
-    f"{crop2} Model 2: Actual vs Predicted"
-)
-
-crop2_poly_chart_notes = st.text_area(
-    "Chart Explanation",
-    value=f"""
-This plot evaluates how well the polynomial model predicts {crop2} yield.
-""",
-    height=120,
-    key="crop2_poly_chart_notes"
-)
-
-st.code("""
-plt.figure(figsize=(10,6))
-
-plt.scatter(
-    y2_test,
-    y2_pred2
-)
-
-plt.show()
-""")
-
-fig, ax = plt.subplots(
-    figsize=(10, 6)
-)
-
-fig.patch.set_facecolor("#F5F1E6")
-
-ax.set_facecolor("white")
-
-ax.scatter(
-    y2_test,
-    y2_pred2,
-    color="#d5b37e",
-    edgecolor="black",
-    s=85
-)
-
-ax.plot(
-    [y2_test.min(), y2_test.max()],
-    [y2_test.min(), y2_test.max()],
-    color="#a68a5b",
-    linewidth=2.2
-)
-
-ax.set_title(
-    f"{crop2} Model 2 (Polynomial): Actual vs Predicted Yield",
-    fontweight="bold"
-)
-
-ax.set_xlabel("Actual Yield (kg/ha)")
-ax.set_ylabel("Predicted Yield (kg/ha)")
-
-ax.grid(
-    True,
-    alpha=0.3
-)
-
-ax.legend(
-    ["Perfect Prediction Line", "Model Predictions"],
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-crop2_model2_interpretation = st.text_area(
-    "Model 2 Explanation",
-    value=f"""
-Discuss how the polynomial model compares with the linear regression model. Explain whether introducing curvature improves predictive performance, whether the model better captures diminishing returns, and how the RMSE and R² values compare with Model 1.
-""",
-    height=240,
-    key="crop2_model2_interpretation"
-)
-
-# -----------------------------
-# MODEL 3: OPTIMAL FERTILIZER LEVEL
-# -----------------------------
-
-st.subheader(f"{crop2} Model 3: Optimal Point Visualization")
-
-crop2_optimal_intro = st.text_area(
-    "Model 3 Introduction",
-    value=f"""
-This chart shows the polynomial curve, the real data points, and the exact optimal fertilizer level for {crop2}.
-""",
-    height=120,
-    key="crop2_optimal_intro"
-)
-
-st.code("""
-# Smooth range of fertilizer values for plotting
-x_range2 = np.linspace(
-    df_crop2["Value_fert"].min(),
-    df_crop2["Value_fert"].max(),
-    200
-)
-
-# Extract coefficients
-a2 = model2_2.coef_[1]
-b2 = model2_2.coef_[0]
-
-# Compute optimal fertilizer level
-x_opt2 = -b2 / (2 * a2)
-
-# Predicted yield at the optimum
-x_opt_df2 = pd.DataFrame(
-    {"Value_fert": [x_opt2]}
-)
-
-x_opt_poly2 = poly2.transform(
-    x_opt_df2
-)
-
-y_opt2 = model2_2.predict(
-    x_opt_poly2
-)[0]
-""")
-
-x_range2 = np.linspace(
-    df_crop_second["Value_fert"].min(),
-    df_crop_second["Value_fert"].max(),
-    200
-)
-
-a2 = model2_2.coef_[1]
-b2 = model2_2.coef_[0]
-
-x_opt2 = -b2 / (2 * a2)
-
-x_opt_df2 = pd.DataFrame(
-    {"Value_fert": [x_opt2]}
-)
-
-x_opt_poly2 = poly2.transform(
-    x_opt_df2
-)
-
-y_opt2 = model2_2.predict(
-    x_opt_poly2
-)[0]
-
-st.write("### Model Results")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric(
-        "Optimal Fertilizer (kg/ha)",
-        f"{x_opt2:.2f}"
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric(
+            "RMSE",
+            f"{rmse2_2:.2f}"
+        )
+    
+    with col2:
+        st.metric(
+            "R² Score",
+            f"{r2_2_2:.3f}"
+        )
+    
+    # -----------------------------
+    # ACTUAL VS PREDICTED
+    # -----------------------------
+    
+    st.subheader(
+        f"{crop2} Model 2: Actual vs Predicted"
     )
-
-with col2:
-    st.metric(
-        "Predicted Yield at Optimum",
-        f"{y_opt2:.2f}"
-    )
-
-x_range_df2 = pd.DataFrame(
-    {"Value_fert": x_range2}
-)
-
-X_curve2 = poly2.transform(
-    x_range_df2
-)
-
-y_curve2 = model2_2.predict(
-    X_curve2
-)
-
-fig, ax = plt.subplots(
-    figsize=(10, 6)
-)
-
-fig.patch.set_facecolor("#F5F1E6")
-
-ax.set_facecolor("white")
-
-ax.plot(
-    x_range2,
-    y_curve2,
-    color="#a68a5b",
-    linewidth=2.5,
-    label="Polynomial Curve"
-)
-
-ax.scatter(
-    df_crop_second["Value_fert"],
-    df_crop_second["Value_yield"],
-    color="#d5b37e",
-    edgecolor="black",
-    s=85,
-    alpha=0.8,
-    label="Data Points"
-)
-
-ax.scatter(
-    x_opt2,
-    y_opt2,
-    color="#4A7C59",
-    s=120,
-    edgecolor="black",
-    zorder=5,
-    label=f"Optimal Point ({x_opt2:.1f} kg/ha)"
-)
-
-ax.set_title(
-    f"{crop2} Model 3: Optimal Fertilizer Level for Maximum Yield",
-    fontweight="bold"
-)
-
-ax.set_xlabel("Fertilizer Use (kg/ha)")
-ax.set_ylabel("Predicted Yield (kg/ha)")
-
-ax.grid(
-    True,
-    alpha=0.3
-)
-
-ax.legend(
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-crop2_model3_interpretation = st.text_area(
-    "Model 3 Interpretation",
-    value=f"""
-Interpret the optimal fertilizer level identified for {crop2}. Discuss why yields begin to level off beyond this point, how the polynomial model identifies diminishing returns, and how this recommendation could support more efficient fertilizer management.
-""",
-    height=240,
-    key="crop2_model3_interpretation"
-)
-crop2_summary = st.text_area(
-    f"{crop2} Model Section Summary",
-    value=f"""
-This section evaluated three approaches for understanding the relationship between fertilizer use and {crop2} yield.
-
-Model 1 established a baseline linear relationship and measured how strongly fertilizer application predicts yield.
-
-Model 2 introduced a polynomial term to capture diminishing returns and nonlinear response patterns commonly observed in agricultural systems.
-
-Model 3 converted the polynomial curve into a practical recommendation by identifying the fertilizer level associated with maximum predicted yield.
-
-Together, these models demonstrate how fertilizer influences {crop2} productivity while highlighting the point where additional fertilizer provides progressively smaller gains. The results provide a data-driven foundation for improving nutrient efficiency and supporting more sustainable fertilizer management decisions.
-""",
-    height=300,
-    key="crop2_summary"
-)
-
-# -----------------------------
-# CROP COMPARISON
-# -----------------------------
-if crop2 is not None:
-    comparison_intro = st.text_area(
-        "Comparison Overview",
+    
+    crop2_poly_chart_notes = st.text_area(
+        "Chart Explanation",
         value=f"""
-This comparison visualizes how {crop} and {crop2} respond to fertilizer application across the same fertilizer range. The polynomial response curves highlight differences in yield behavior, while the optimal points identify the fertilizer levels associated with maximum predicted yield for each crop.
-""",
-        height=180,
-        key="comparison_intro"
+    This plot evaluates how well the polynomial model predicts {crop2} yield.
+    """,
+        height=120,
+        key="crop2_poly_chart_notes"
     )
-else:
-    comparison_intro = st.text_area(
-        "Crop Overview",
+    
+    st.code("""
+    plt.figure(figsize=(10,6))
+    
+    plt.scatter(
+        y2_test,
+        y2_pred2
+    )
+    
+    plt.show()
+    """)
+    
+    fig, ax = plt.subplots(
+        figsize=(10, 6)
+    )
+    
+    fig.patch.set_facecolor(crop2_background)
+    
+    ax.set_facecolor("white")
+    
+    ax.scatter(
+        y2_test,
+        y2_pred2,
+        color=crop2_color,
+        edgecolor="black",
+        s=85
+    )
+    
+    ax.plot(
+        [y2_test.min(), y2_test.max()],
+        [y2_test.min(), y2_test.max()],
+        color=crop2_color,
+        linewidth=2.2
+    )
+    
+    ax.set_title(
+        f"{crop2} Model 2 (Polynomial): Actual vs Predicted Yield",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel("Actual Yield (kg/ha)")
+    ax.set_ylabel("Predicted Yield (kg/ha)")
+    
+    ax.grid(
+        True,
+        alpha=0.3
+    )
+    
+    ax.legend(
+        ["Perfect Prediction Line", "Model Predictions"],
+        frameon=True,
+        facecolor="white",
+        edgecolor=crop2_color
+    )
+    
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    
+    crop2_model2_interpretation = st.text_area(
+        "Model 2 Explanation",
         value=f"""
-This analysis explores how {crop} responds to fertilizer application. The polynomial response curve highlights yield behavior across different fertilizer levels, while the optimal point identifies the fertilizer level associated with maximum predicted yield.
-""",
-        height=180,
-        key="comparison_intro"
+    Discuss how the polynomial model compares with the linear regression model. Explain whether introducing curvature improves predictive performance, whether the model better captures diminishing returns, and how the RMSE and R² values compare with Model 1.
+    """,
+        height=240,
+        key="crop2_model2_interpretation"
     )
-
-st.code("""
-# Smooth fertilizer range across both datasets
-x_range = np.linspace(
-    min(df_crop["Value_fert"].min(), df_crop2["Value_fert"].min()),
-    max(df_crop["Value_fert"].max(), df_crop2["Value_fert"].max()),
-    200
-)
-
-# Create polynomial curves
-
-# Plot comparison
-plt.show()
-""")
-
-# Smooth fertilizer range
-x_range = np.linspace(
-    min(
-        df_crop_main["Value_fert"].min(),
-        df_crop_second["Value_fert"].min()
-    ),
-    max(
-        df_crop_main["Value_fert"].max(),
-        df_crop_second["Value_fert"].max()
-    ),
-    200
-)
-
-# -----------------------------
-# Crop 1 curve
-# -----------------------------
-
-x_range_df = pd.DataFrame(
-    {"Value_fert": x_range}
-)
-
-X_curve = poly.transform(
-    x_range_df
-)
-
-y_curve = model2.predict(
-    X_curve
-)
-
-coef_11 = model2.coef_[0]
-coef_12 = model2.coef_[1]
-
-x_opt = -coef_11 / (2 * coef_12)
-
-x_opt_df = pd.DataFrame(
-    {"Value_fert": [x_opt]}
-)
-
-y_opt = model2.predict(
-    poly.transform(x_opt_df)
-)[0]
-
-# -----------------------------
-# Crop 2 curve
-# -----------------------------
-
-x_range_df_2 = pd.DataFrame(
-    {"Value_fert": x_range}
-)
-
-X_curve_2 = poly2.transform(
-    x_range_df_2
-)
-
-y_curve_2 = model2_2.predict(
-    X_curve_2
-)
-
-coef_21 = model2_2.coef_[0]
-coef_22 = model2_2.coef_[1]
-
-x_opt_2 = -coef_21 / (2 * coef_22)
-
-x_opt_df_2 = pd.DataFrame(
-    {"Value_fert": [x_opt_2]}
-)
-
-y_opt_2 = model2_2.predict(
-    poly2.transform(x_opt_df_2)
-)[0]
-
-# -----------------------------
-# Plot
-# -----------------------------
-
-fig, ax = plt.subplots(
-    figsize=(12, 6)
-)
-
-fig.patch.set_facecolor("#DDEEE3")
-
-ax.set_facecolor("white")
-
-# Crop 1
-
-ax.plot(
-    x_range,
-    y_curve,
-    color="#4A7C59",
-    linewidth=2.5,
-    label=f"{crop} Curve"
-)
-
-ax.scatter(
-    x_opt,
-    y_opt,
-    color="#2F5D3A",
-    s=120,
-    edgecolor="black",
-    zorder=5,
-    label=f"{crop} Optimum ({x_opt:.1f} kg/ha)"
-)
-
-# Crop 2
-
-ax.plot(
-    x_range,
-    y_curve_2,
-    color="#a68a5b",
-    linewidth=2.5,
-    label=f"{crop2} Curve"
-)
-
-ax.scatter(
-    x_opt_2,
-    y_opt_2,
-    color="#8C6E3C",
-    s=120,
-    edgecolor="black",
-    zorder=5,
-    label=f"{crop2} Optimum ({x_opt_2:.1f} kg/ha)"
-)
-
-ax.set_title(
-    f"{crop} vs {crop2}: Fertilizer–Yield Response Curves",
-    fontweight="bold"
-)
-
-ax.set_xlabel(
-    "Fertilizer Use (kg/ha)"
-)
-
-ax.set_ylabel(
-    "Predicted Yield (kg/ha)"
-)
-
-ax.grid(
-    True,
-    alpha=0.3
-)
-
-ax.legend(
-    frameon=True,
-    facecolor="white",
-    edgecolor="#A8C3B0"
-)
-
-plt.tight_layout()
-
-st.pyplot(fig)
-
-comparison_interpretation = st.text_area(
-    "Comparison Interpretation",
-    value=f"""
-Compare the fertilizer-response behavior of {crop} and {crop2}. Discuss which crop appears more responsive to fertilizer application, whether one crop reaches diminishing returns sooner, and how their optimal fertilizer levels differ. Consider the implications for nutrient management and crop-specific sustainability strategies.
-""",
-    height=280,
-    key="comparison_interpretation"
-)
+    
+    # -----------------------------
+    # MODEL 3: OPTIMAL FERTILIZER LEVEL
+    # -----------------------------
+    
+    st.subheader(f"{crop2} Model 3: Optimal Point Visualization")
+    
+    crop2_optimal_intro = st.text_area(
+        "Model 3 Introduction",
+        value=f"""
+    This chart shows the polynomial curve, the real data points, and the exact optimal fertilizer level for {crop2}.
+    """,
+        height=120,
+        key="crop2_optimal_intro"
+    )
+    
+    st.code("""
+    # Smooth range of fertilizer values for plotting
+    x_range2 = np.linspace(
+        df_crop2["Value_fert"].min(),
+        df_crop2["Value_fert"].max(),
+        200
+    )
+    
+    # Extract coefficients
+    a2 = model2_2.coef_[1]
+    b2 = model2_2.coef_[0]
+    
+    # Compute optimal fertilizer level
+    x_opt2 = -b2 / (2 * a2)
+    
+    # Predicted yield at the optimum
+    x_opt_df2 = pd.DataFrame(
+        {"Value_fert": [x_opt2]}
+    )
+    
+    x_opt_poly2 = poly2.transform(
+        x_opt_df2
+    )
+    
+    y_opt2 = model2_2.predict(
+        x_opt_poly2
+    )[0]
+    """)
+    
+    x_range2 = np.linspace(
+        df_crop_second["Value_fert"].min(),
+        df_crop_second["Value_fert"].max(),
+        200
+    )
+    
+    a2 = model2_2.coef_[1]
+    b2 = model2_2.coef_[0]
+    
+    x_opt2 = -b2 / (2 * a2)
+    
+    x_opt_df2 = pd.DataFrame(
+        {"Value_fert": [x_opt2]}
+    )
+    
+    x_opt_poly2 = poly2.transform(
+        x_opt_df2
+    )
+    
+    y_opt2 = model2_2.predict(
+        x_opt_poly2
+    )[0]
+    
+    st.write("### Model Results")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric(
+            "Optimal Fertilizer (kg/ha)",
+            f"{x_opt2:.2f}"
+        )
+    
+    with col2:
+        st.metric(
+            "Predicted Yield at Optimum",
+            f"{y_opt2:.2f}"
+        )
+    
+    x_range_df2 = pd.DataFrame(
+        {"Value_fert": x_range2}
+    )
+    
+    X_curve2 = poly2.transform(
+        x_range_df2
+    )
+    
+    y_curve2 = model2_2.predict(
+        X_curve2
+    )
+    
+    fig, ax = plt.subplots(
+        figsize=(10, 6)
+    )
+    
+    fig.patch.set_facecolor(crop2_background)
+    
+    ax.set_facecolor("white")
+    
+    ax.plot(
+        x_range2,
+        y_curve2,
+        color=crop2_color,
+        linewidth=2.5,
+        label="Polynomial Curve"
+    )
+    
+    ax.scatter(
+        df_crop_second["Value_fert"],
+        df_crop_second["Value_yield"],
+        color=crop2_color,
+        edgecolor="black",
+        s=85,
+        alpha=0.8,
+        label="Data Points"
+    )
+    
+    ax.scatter(
+        x_opt2,
+        y_opt2,
+        color=crop2_color,
+        s=120,
+        edgecolor="black",
+        zorder=5,
+        label=f"Optimal Point ({x_opt2:.1f} kg/ha)"
+    )
+    
+    ax.set_title(
+        f"{crop2} Model 3: Optimal Fertilizer Level for Maximum Yield",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel("Fertilizer Use (kg/ha)")
+    ax.set_ylabel("Predicted Yield (kg/ha)")
+    
+    ax.grid(
+        True,
+        alpha=0.3
+    )
+    
+    ax.legend(
+        frameon=True,
+        facecolor="white",
+        edgecolor=crop2_color
+    )
+    
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    
+    crop2_model3_interpretation = st.text_area(
+        "Model 3 Interpretation",
+        value=f"""
+    Interpret the optimal fertilizer level identified for {crop2}. Discuss why yields begin to level off beyond this point, how the polynomial model identifies diminishing returns, and how this recommendation could support more efficient fertilizer management.
+    """,
+        height=240,
+        key="crop2_model3_interpretation"
+    )
+    crop2_summary = st.text_area(
+        f"{crop2} Model Section Summary",
+        value=f"""
+    This section evaluated three approaches for understanding the relationship between fertilizer use and {crop2} yield.
+    
+    Model 1 established a baseline linear relationship and measured how strongly fertilizer application predicts yield.
+    
+    Model 2 introduced a polynomial term to capture diminishing returns and nonlinear response patterns commonly observed in agricultural systems.
+    
+    Model 3 converted the polynomial curve into a practical recommendation by identifying the fertilizer level associated with maximum predicted yield.
+    
+    Together, these models demonstrate how fertilizer influences {crop2} productivity while highlighting the point where additional fertilizer provides progressively smaller gains. The results provide a data-driven foundation for improving nutrient efficiency and supporting more sustainable fertilizer management decisions.
+    """,
+        height=300,
+        key="crop2_summary"
+    )
+    
+    # -----------------------------
+    # CROP COMPARISON
+    # -----------------------------
+    if crop2 is not None:
+        comparison_intro = st.text_area(
+            "Comparison Overview",
+            value=f"""
+    This comparison visualizes how {crop} and {crop2} respond to fertilizer application across the same fertilizer range. The polynomial response curves highlight differences in yield behavior, while the optimal points identify the fertilizer levels associated with maximum predicted yield for each crop.
+    """,
+            height=180,
+            key="comparison_intro"
+        )
+    else:
+        comparison_intro = st.text_area(
+            "Crop Overview",
+            value=f"""
+    This analysis explores how {crop} responds to fertilizer application. The polynomial response curve highlights yield behavior across different fertilizer levels, while the optimal point identifies the fertilizer level associated with maximum predicted yield.
+    """,
+            height=180,
+            key="comparison_intro"
+        )
+    
+    st.code("""
+    # Smooth fertilizer range across both datasets
+    x_range = np.linspace(
+        min(df_crop["Value_fert"].min(), df_crop2["Value_fert"].min()),
+        max(df_crop["Value_fert"].max(), df_crop2["Value_fert"].max()),
+        200
+    )
+    
+    # Create polynomial curves
+    
+    # Plot comparison
+    plt.show()
+    """)
+    
+    # Smooth fertilizer range
+    x_range = np.linspace(
+        min(
+            df_crop_main["Value_fert"].min(),
+            df_crop_second["Value_fert"].min()
+        ),
+        max(
+            df_crop_main["Value_fert"].max(),
+            df_crop_second["Value_fert"].max()
+        ),
+        200
+    )
+    
+    # -----------------------------
+    # Crop 1 curve
+    # -----------------------------
+    
+    x_range_df = pd.DataFrame(
+        {"Value_fert": x_range}
+    )
+    
+    X_curve = poly.transform(
+        x_range_df
+    )
+    
+    y_curve = model2.predict(
+        X_curve
+    )
+    
+    coef_11 = model2.coef_[0]
+    coef_12 = model2.coef_[1]
+    
+    x_opt = -coef_11 / (2 * coef_12)
+    
+    x_opt_df = pd.DataFrame(
+        {"Value_fert": [x_opt]}
+    )
+    
+    y_opt = model2.predict(
+        poly.transform(x_opt_df)
+    )[0]
+    
+    # -----------------------------
+    # Crop 2 curve
+    # -----------------------------
+    
+    x_range_df_2 = pd.DataFrame(
+        {"Value_fert": x_range}
+    )
+    
+    X_curve_2 = poly2.transform(
+        x_range_df_2
+    )
+    
+    y_curve_2 = model2_2.predict(
+        X_curve_2
+    )
+    
+    coef_21 = model2_2.coef_[0]
+    coef_22 = model2_2.coef_[1]
+    
+    x_opt_2 = -coef_21 / (2 * coef_22)
+    
+    x_opt_df_2 = pd.DataFrame(
+        {"Value_fert": [x_opt_2]}
+    )
+    
+    y_opt_2 = model2_2.predict(
+        poly2.transform(x_opt_df_2)
+    )[0]
+    
+    # -----------------------------
+    # Plot
+    # -----------------------------
+    
+    fig, ax = plt.subplots(
+        figsize=(12, 6)
+    )
+    
+    fig.patch.set_facecolor(fert_background)
+    
+    ax.set_facecolor("white")
+    
+    # Crop 1
+    
+    ax.plot(
+        x_range,
+        y_curve,
+        color=crop1_color,
+        linewidth=2.5,
+        label=f"{crop} Curve"
+    )
+    
+    ax.scatter(
+        x_opt,
+        y_opt,
+        color=crop1_color,
+        s=120,
+        edgecolor="black",
+        zorder=5,
+        label=f"{crop} Optimum ({x_opt:.1f} kg/ha)"
+    )
+    
+    # Crop 2
+    
+    ax.plot(
+        x_range,
+        y_curve_2,
+        color=crop2_color,
+        linewidth=2.5,
+        label=f"{crop2} Curve"
+    )
+    
+    ax.scatter(
+        x_opt_2,
+        y_opt_2,
+        color=crop2_color,
+        s=120,
+        edgecolor="black",
+        zorder=5,
+        label=f"{crop2} Optimum ({x_opt_2:.1f} kg/ha)"
+    )
+    
+    ax.set_title(
+        f"{crop} vs {crop2}: Fertilizer–Yield Response Curves",
+        fontweight="bold"
+    )
+    
+    ax.set_xlabel(
+        "Fertilizer Use (kg/ha)"
+    )
+    
+    ax.set_ylabel(
+        "Predicted Yield (kg/ha)"
+    )
+    
+    ax.grid(
+        True,
+        alpha=0.3
+    )
+    
+    ax.legend(
+        frameon=True,
+        facecolor="white",
+        edgecolor="#A8C3B0"
+    )
+    
+    plt.tight_layout()
+    
+    st.pyplot(fig)
+    
+    comparison_interpretation = st.text_area(
+        "Comparison Interpretation",
+        value=f"""
+    Compare the fertilizer-response behavior of {crop} and {crop2}. Discuss which crop appears more responsive to fertilizer application, whether one crop reaches diminishing returns sooner, and how their optimal fertilizer levels differ. Consider the implications for nutrient management and crop-specific sustainability strategies.
+    """,
+        height=280,
+        key="comparison_interpretation"
+    )
 
 # -----------------------------
 # PROJECT QUESTIONS ANSWERED
