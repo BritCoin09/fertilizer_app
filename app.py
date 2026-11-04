@@ -355,9 +355,6 @@ def build_crop_df(crop_name: str):
 crop = st.session_state.get("crop", "Wheat")
 crop2 = st.session_state.get("crop2", None)
 
-df_crop_main = build_crop_df(crop)
-df_crop_second = build_crop_df(crop2) if crop2 else None
-
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
@@ -938,9 +935,6 @@ selected_crops = st.multiselect(
     max_selections=2
 )
 
-df_crop_main = build_crop_df(crop)
-df_crop_second = build_crop_df(crop2) if crop2 else None
-
 if len(selected_crops) == 0:
     st.warning("⚠️ Please select at least one crop.")
     st.stop()
@@ -954,6 +948,9 @@ else:
 
 st.session_state.crop = crop
 st.session_state.crop2 = crop2
+
+df_crop_main = build_crop_df(crop)
+df_crop_second = build_crop_df(crop2) if crop2 else None
 
 st.subheader("Load Crop Yield Dataset")
 
