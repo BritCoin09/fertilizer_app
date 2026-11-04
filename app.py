@@ -215,13 +215,12 @@ if _client and chat_query:
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
 
-st.sidebar.subheader("✏️ Crop Selection")
+st.sidebar.subheader("🌾 Crop Selection")
 
-crop = st.session_state.get("crop", "Wheat")
-crop2 = st.session_state.get("crop2", "Barley")
+st.sidebar.write(f"Crop 1: {crop}")
 
-st.sidebar.write(f"🌾 Crop 1: {crop}")
-st.sidebar.write(f"🌾 Crop 2: {crop2}")
+if crop2:
+    st.sidebar.write(f"Crop 2: {crop2}")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
@@ -1010,21 +1009,25 @@ st.subheader("🌾 Select Crops for Comparison")
 available_crops = sorted(crop_yield_only["Item"].unique())
 
 selected_crops = st.multiselect(
-    "Choose exactly 2 crops",
+    "Choose up to 2 crops",
     available_crops,
-    default=[
-        st.session_state.get("crop", "Wheat"),
-        st.session_state.get("crop2", "Barley")
-    ],
+    default=["Wheat", "Barley"],
     max_selections=2
 )
 
-if len(selected_crops) == 2:
-    st.session_state.crop = selected_crops[0]
-    st.session_state.crop2 = selected_crops[1]
-else:
-    st.warning("⚠️ Select 2 crops to continue.")
+if len(selected_crops) == 0:
+    st.warning("⚠️ Please select at least one crop.")
     st.stop()
+
+crop = selected_crops[0]
+
+if len(selected_crops) > 1:
+    crop2 = selected_crops[1]
+else:
+    crop2 = None
+
+st.session_state.crop = crop
+st.session_state.crop2 = crop2
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
@@ -2619,19 +2622,24 @@ Together, these models demonstrate how fertilizer influences {crop2} productivit
 # -----------------------------
 # CROP COMPARISON
 # -----------------------------
-
-st.header(
-    f"⚖️ {crop} vs {crop2}: Fertilizer Response Comparison"
-)
-
-comparison_intro = st.text_area(
-    "Comparison Overview",
-    value=f"""
+if crop2 is not None:
+    comparison_intro = st.text_area(
+        "Comparison Overview",
+        value=f"""
 This comparison visualizes how {crop} and {crop2} respond to fertilizer application across the same fertilizer range. The polynomial response curves highlight differences in yield behavior, while the optimal points identify the fertilizer levels associated with maximum predicted yield for each crop.
 """,
-    height=180,
-    key="comparison_intro"
-)
+        height=180,
+        key="comparison_intro"
+    )
+else:
+    comparison_intro = st.text_area(
+        "Crop Overview",
+        value=f"""
+This analysis explores how {crop} responds to fertilizer application. The polynomial response curve highlights yield behavior across different fertilizer levels, while the optimal point identifies the fertilizer level associated with maximum predicted yield.
+""",
+        height=180,
+        key="comparison_intro"
+    )
 
 st.code("""
 # Smooth fertilizer range across both datasets
