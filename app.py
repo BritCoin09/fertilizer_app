@@ -925,13 +925,6 @@ available_crops = sorted(crop_yield_only["Item"].unique())
 selected_crops = st.multiselect(
     "Choose up to 2 crops",
     available_crops,
-    default=[
-        c for c in [
-            st.session_state.get("crop", "Wheat"),
-            st.session_state.get("crop2")
-        ]
-        if c is not None
-    ],
     max_selections=2
 )
 
