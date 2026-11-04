@@ -83,7 +83,7 @@ def load_repo_files():
 
 MAX_TEMPLATE_CHARS = 50000
 
-ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
+#ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
