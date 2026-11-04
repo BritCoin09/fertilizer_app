@@ -904,9 +904,6 @@ This explains the upward trend after 2010.
 )
 
 # -----------------------------
-# CROP MODELING
-# -----------------------------
-# -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
 
@@ -940,6 +937,10 @@ selected_crops = st.multiselect(
     ],
     max_selections=2
 )
+
+df_crop_main = build_crop_df(crop)
+df_crop_second = build_crop_df(crop2) if crop2 else None
+
 if len(selected_crops) == 0:
     st.warning("⚠️ Please select at least one crop.")
     st.stop()
@@ -953,8 +954,6 @@ else:
 
 st.session_state.crop = crop
 st.session_state.crop2 = crop2
-
-st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
 
 st.subheader("Load Crop Yield Dataset")
 
