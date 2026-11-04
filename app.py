@@ -352,6 +352,9 @@ def build_crop_df(crop_name: str):
     )
     return df_crop
 
+crop = st.session_state.get("crop", "Wheat")
+crop2 = st.session_state.get("crop2", None)
+
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
 
