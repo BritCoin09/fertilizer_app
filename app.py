@@ -242,7 +242,7 @@ else:
     crop2_color = None
     crop2_background = None
 
-fert_background = "#DDEEE3"
+fert_background = "#4A7C59"
 # -----------------------------
 # Load data
 # -----------------------------
