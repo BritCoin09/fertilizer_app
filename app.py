@@ -77,13 +77,13 @@ def load_repo_files():
 
     return docs
 
-#REPO_FILES = load_repo_files()
+REPO_FILES = load_repo_files()
 
-#ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
+ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
 
 MAX_TEMPLATE_CHARS = 50000
 
-#ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
+ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 
 # -----------------------------
 # Sidebar: crop selection + API key + chatbot
@@ -115,10 +115,10 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
 
 RAG_DOCS = []
 
-#for doc in REPO_FILES:
-    #RAG_DOCS.extend(
-        #chunk_text(doc, max_chars=3000)
-    #)
+for doc in REPO_FILES:
+    RAG_DOCS.extend(
+        chunk_text(doc, max_chars=3000)
+    )
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
@@ -158,10 +158,10 @@ faiss_index = None
 faiss_texts = None
     
 #if _client:
-    #faiss_index, faiss_texts = build_faiss_index(
-        #RAG_DOCS,
-        #_client
-    #)
+    faiss_index, faiss_texts = build_faiss_index(
+        RAG_DOCS,
+        _client
+    )
 
 # -----------------------------
 # Chatbot (RAG)
