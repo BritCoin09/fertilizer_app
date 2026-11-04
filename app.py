@@ -217,6 +217,9 @@ if _client and chat_query:
 
 st.sidebar.subheader("🌾 Crop Selection")
 
+crop = st.session_state.get("crop", "Wheat")
+crop2 = st.session_state.get("crop2", None)
+
 st.sidebar.write(f"Crop 1: {crop}")
 
 if crop2:
