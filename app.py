@@ -1022,6 +1022,9 @@ selected_crops = st.multiselect(
 if len(selected_crops) == 2:
     st.session_state.crop = selected_crops[0]
     st.session_state.crop2 = selected_crops[1]
+else:
+    st.warning("⚠️ Select 2 crops to continue.")
+    st.stop()
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
