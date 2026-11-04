@@ -2723,7 +2723,7 @@ if crop2 and df_crop_second is not None:
         figsize=(12, 6)
     )
     
-    fig.patch.set_facecolor(fert_background)
+    fig.patch.set_facecolor("#DDEEE3")
     
     ax.set_facecolor("white")
     
