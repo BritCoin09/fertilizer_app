@@ -157,7 +157,7 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 faiss_index = None
 faiss_texts = None
     
-#if _client:
+if _client:
     faiss_index, faiss_texts = build_faiss_index(
         RAG_DOCS,
         _client
