@@ -228,7 +228,7 @@ crop1_background = st.sidebar.color_picker(
     "#DDEEE3"
 )
 
-if crop2:
+if st.session_state.get("crop2"):
     crop2_color = st.sidebar.color_picker(
         "Crop 2 Color",
         "#B58A4A"
