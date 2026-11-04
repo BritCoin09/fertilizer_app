@@ -906,6 +906,54 @@ This explains the upward trend after 2010.
 # -----------------------------
 # CROP MODELING
 # -----------------------------
+# -----------------------------
+# SECTION 3: CROP MODELING
+# -----------------------------
+
+st.subheader("Choose Your Crop(s)")
+crop_selection_notes = st.text_area(
+    "Crop Selection",
+    value="""
+The FAOSTAT dataset includes a diverse collection of agricultural products ranging from staple crops such as wheat, barley, rice, and maize to fruits, vegetables, legumes, and fiber crops. Select an item below to generate custom visualizations, predictive models, and fertilizer optimization insights.
+""",
+    height=150,
+    key="crop_selection_notes"
+)
+
+st.info(
+    "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
+)
+
+st.subheader("🌾 Select Crop(s) for Analysis")
+
+available_crops = sorted(crop_yield_only["Item"].unique())
+
+selected_crops = st.multiselect(
+    "Choose up to 2 crops",
+    available_crops,
+    default=[
+        c for c in [
+            st.session_state.get("crop", "Wheat"),
+            st.session_state.get("crop2")
+        ]
+        if c is not None
+    ],
+    max_selections=2
+)
+if len(selected_crops) == 0:
+    st.warning("⚠️ Please select at least one crop.")
+    st.stop()
+
+crop = selected_crops[0]
+
+if len(selected_crops) > 1:
+    crop2 = selected_crops[1]
+else:
+    crop2 = None
+
+st.session_state.crop = crop
+st.session_state.crop2 = crop2
+
 st.header(f"🌾 Modeling: {crop} Yield vs Fertilizer")
 
 st.subheader("Load Crop Yield Dataset")
@@ -989,55 +1037,6 @@ global_yield = (
 
 df_long
 """)
-
-
-# -----------------------------
-# SECTION 3: CROP MODELING
-# -----------------------------
-
-st.subheader("Choose Your Crop(s)")
-crop_selection_notes = st.text_area(
-    "Crop Selection",
-    value="""
-The FAOSTAT dataset includes a diverse collection of agricultural products ranging from staple crops such as wheat, barley, rice, and maize to fruits, vegetables, legumes, and fiber crops. Select an item below to generate custom visualizations, predictive models, and fertilizer optimization insights.
-""",
-    height=150,
-    key="crop_selection_notes"
-)
-
-st.info(
-    "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
-)
-
-st.subheader("🌾 Select Crop(s) for Analysis")
-
-available_crops = sorted(crop_yield_only["Item"].unique())
-
-selected_crops = st.multiselect(
-    "Choose up to 2 crops",
-    available_crops,
-    default=[
-        c for c in [
-            st.session_state.get("crop", "Wheat"),
-            st.session_state.get("crop2")
-        ]
-        if c is not None
-    ],
-    max_selections=2
-)
-if len(selected_crops) == 0:
-    st.warning("⚠️ Please select at least one crop.")
-    st.stop()
-
-crop = selected_crops[0]
-
-if len(selected_crops) > 1:
-    crop2 = selected_crops[1]
-else:
-    crop2 = None
-
-st.session_state.crop = crop
-st.session_state.crop2 = crop2
 
 st.header(f"🌾 Section 3: {crop} Modeling")
 crop_modeling_intro = st.text_area(
