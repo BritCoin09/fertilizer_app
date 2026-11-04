@@ -990,6 +990,11 @@ global_yield = (
 df_long
 """)
 
+
+# -----------------------------
+# SECTION 3: CROP MODELING
+# -----------------------------
+
 st.subheader("Choose Your Crop(s)")
 crop_selection_notes = st.text_area(
     "Crop Selection",
@@ -1033,9 +1038,6 @@ else:
 
 st.session_state.crop = crop
 st.session_state.crop2 = crop2
-# -----------------------------
-# SECTION 3: CROP MODELING
-# -----------------------------
 
 st.header(f"🌾 Section 3: {crop} Modeling")
 crop_modeling_intro = st.text_area(
