@@ -952,7 +952,38 @@ st.info(
 
 st.subheader("🌾 Select Crop(s) for Analysis")
 
-available_crops = sorted(crop_yield_only["Item"].unique())
+exclude_crops = [
+    "Eggs Primary",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in crop_yield_only["Item"].unique()
+    if crop not in exclude_crops
+)
+
 
 selected_crops = st.multiselect(
     "Choose up to 2 crops",
