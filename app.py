@@ -404,6 +404,18 @@ st.title(
     f"{crop1_emoji} Sustainable Fertilizer Optimization {crop2_emoji}"
 )
 
+st.info("""
+🌾 Understanding Your Results
+
+Crop yield is influenced by many factors, including fertilizer use,
+rainfall, temperature, soil conditions, irrigation, and management practices.
+
+Some crops may show strong relationships between fertilizer and yield,
+while others may show weak or even negative relationships. These outcomes
+do not necessarily indicate an error. Instead, they suggest that fertilizer
+alone may not fully explain yield variation for the selected crop.
+""")
+
 st.header("🌍 Problem & Impact")
 
 problem_impact = st.text_area(
