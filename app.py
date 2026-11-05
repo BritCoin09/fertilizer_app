@@ -400,7 +400,9 @@ crop2 = st.session_state.get("crop2", None)
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-st.title("🌾Sustainable Fertilizer Optimization🌱")
+st.title(
+    f"{crop1_emoji} Sustainable Fertilizer Optimization {crop2_emoji}"
+)
 
 st.header("🌍 Problem & Impact")
 
@@ -960,7 +962,9 @@ st.info(
     "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
 )
 
-st.subheader("🌾 Select Crop(s) for Analysis")
+st.subheader(
+    f"{crop1_emoji} Select Crop(s) for Analysis {crop2_emoji}"
+)
 
 exclude_crops = [
     "Eggs Primary",
@@ -1111,7 +1115,9 @@ global_yield = (
 df_long
 """)
 
-st.header(f"🌾 Section 3: {crop} Modeling")
+st.header(
+    f"{crop1_emoji} Section 3: {crop} Modeling"
+)
 crop_modeling_intro = st.text_area(
     "Section Introduction",
     value=f"""
@@ -1337,7 +1343,9 @@ else:
 # MODEL 1: LINEAR REGRESSION
 # -----------------------------
 
-st.subheader(f"{crop} Model 1: Linear Regression")
+st.subheader(
+    f"{crop1_emoji} {crop} Model 1: Linear Regression"
+)
 
 linear_intro = st.text_area(
     "Model 1 Introduction",
@@ -1469,7 +1477,10 @@ Discuss how closely the model's predictions align with actual {crop} yields. Eva
 # MODEL 2: POLYNOMIAL REGRESSION
 # -----------------------------
 
-st.subheader(f"{crop} Model 2: Polynomial Regression")
+st.subheader(
+    f"{crop1_emoji} {crop} Model 2: Polynomial Regression"
+)
+
 
 poly_intro = st.text_area(
     "Model 2 Introduction",
@@ -1657,6 +1668,9 @@ Discuss how the polynomial model compares with the linear regression model. Expl
 # MODEL 3: OPTIMAL FERTILIZER LEVEL
 # -----------------------------
 
+st.subheader(
+    f"{crop1_emoji} {crop} Model 3: Optimal Fertilizer Level"
+)
 st.subheader(f"{crop} Model 3: Optimal Fertilizer Level")
 
 optimal_intro = st.text_area(
@@ -1837,7 +1851,9 @@ if crop2 and df_crop_second is not None:
     # SECTION 4: SECOND CROP ANALYSIS
     # -----------------------------
     
-    st.header(f"🌱 Section 4: {crop2} Analysis")
+    st.header(
+        f"{crop2_emoji} Section 4: {crop2} Analysis"
+    )
     
     crop2_intro = st.text_area(
         "Section Introduction",
@@ -1848,7 +1864,9 @@ if crop2 and df_crop_second is not None:
         key="crop2_intro"
     )
     
-    st.subheader(f"Prepare {crop2} Dataset for Modeling")
+    st.subheader(
+        f"{crop2_emoji} Prepare {crop2} Dataset for Modeling"
+    )
     
     crop2_prep_notes = st.text_area(
         "Dataset Preparation",
@@ -1969,7 +1987,9 @@ if crop2 and df_crop_second is not None:
     # MODEL 1: LINEAR REGRESSION
     # -----------------------------
     
-    st.subheader(f"{crop2} Model 1: Linear Regression")
+    st.subheader(
+        f"{crop2_emoji} Prepare {crop2} Dataset for Modeling"
+    )
     
     crop2_linear_intro = st.text_area(
         "Model 1 Introduction",
@@ -2311,7 +2331,9 @@ if crop2 and df_crop_second is not None:
     # MODEL 2: POLYNOMIAL REGRESSION
     # -----------------------------
     
-    st.subheader(f"{crop2} Model 2: Polynomial Regression")
+    st.subheader(
+        f"{crop2_emoji} {crop2} Model 2: Polynomial Regression"
+    )
     
     crop2_poly_intro = st.text_area(
         "Model 2 Introduction",
@@ -2517,7 +2539,9 @@ if crop2 and df_crop_second is not None:
     # MODEL 3: OPTIMAL FERTILIZER LEVEL
     # -----------------------------
     
-    st.subheader(f"{crop2} Model 3: Optimal Point Visualization")
+    st.subheader(
+        f"{crop2_emoji} {crop2} Model 3: Optimal Point Visualization"
+    )
     
     crop2_optimal_intro = st.text_area(
         "Model 3 Introduction",
@@ -2692,9 +2716,10 @@ if crop2 and df_crop_second is not None:
         key="crop2_summary"
     )
     
-    # -----------------------------
-    # CROP COMPARISON
-    # -----------------------------
+    st.header(
+        f"{crop1_emoji} {crop} vs {crop2_emoji} {crop2} Comparison"
+    )
+    
     if crop2 is not None:
         comparison_intro = st.text_area(
             "Comparison Overview",
