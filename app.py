@@ -387,17 +387,6 @@ def build_crop_df(crop_name: str):
 crop = st.session_state.get("crop", "Wheat")
 crop2 = st.session_state.get("crop2", None)
 
-if df_crop_main is None:
-    st.error(
-        f"❌ {crop} does not have enough clean fertilizer and yield data for analysis."
-    )
-    st.stop()
-
-if crop2 and df_crop_second is None:
-    st.warning(
-        f"⚠️ {crop2} does not have enough clean fertilizer and yield data for comparison."
-    )
-
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
@@ -988,6 +977,17 @@ st.session_state.crop2 = crop2
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
 
+if df_crop_main is None:
+    st.error(
+        f"❌ {crop} does not have enough clean fertilizer and yield data for analysis."
+    )
+    st.stop()
+
+if crop2 and df_crop_second is None:
+    st.warning(
+        f"⚠️ {crop2} does not have enough clean fertilizer and yield data for comparison."
+    )
+    
 st.subheader("Load Crop Yield Dataset")
 
 st.code("""
