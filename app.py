@@ -611,15 +611,6 @@ This chart shows that global fertilizer use has become increasingly nitrogen-hea
 # Distribution of Fertilizer Use by Nutrient
 st.subheader("Distribution of Fertilizer Use by Nutrient (kg/ha)")
 
-distribution_intro = st.text_area(
-    "Distribution Commentary",
-    value="""
-This boxplot shows how fertilizer application rates vary across countries for nitrogen, phosphorus, and potassium. Nitrogen displays the widest spread and the highest outliers, reflecting large differences in how intensively countries apply it. Phosphorus and potassium have lower, tighter distributions, indicating more consistent use across countries.
-""",
-    height=150,
-    key="distribution_intro"
-)
-
 st.code("""
 fig = plt.figure(figsize=(10, 6))
 fig.patch.set_facecolor("#F2F2F0")
