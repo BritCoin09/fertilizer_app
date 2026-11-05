@@ -251,6 +251,16 @@ if st.session_state.get("crop2"):
 else:
     crop2_color = None
     crop2_background = None
+    
+crop1_emoji = st.sidebar.text_input(
+    "Crop 1 Emoji",
+    value="🌾"
+)
+
+crop2_emoji = st.sidebar.text_input(
+    "Crop 2 Emoji",
+    value="🌱"
+)
 
 fert_background = "#4A7C59"
 # -----------------------------
