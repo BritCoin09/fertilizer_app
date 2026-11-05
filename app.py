@@ -340,7 +340,14 @@ global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_in
 # Build crop datasets
 # -----------------------------
 def build_crop_df(crop_name: str):
-    selected_crop_df = crop_yield_only[crop_yield_only["Item"] == crop_name]
+
+    if crop_name is None:
+        return None
+
+    selected_crop_df = crop_yield_only[
+        crop_yield_only["Item"] == crop_name
+    ]
+
     if selected_crop_df.empty:
         return None
 
@@ -349,9 +356,14 @@ def build_crop_df(crop_name: str):
         .mean()
         .reset_index()
     )
+
     global_crop["Crop"] = crop_name
 
-    global_fert = fert.groupby("Year")["Value"].mean().reset_index()
+    global_fert = (
+        fert.groupby("Year")["Value"]
+        .mean()
+        .reset_index()
+    )
 
     df_crop = pd.merge(
         global_crop,
@@ -360,10 +372,31 @@ def build_crop_df(crop_name: str):
         how="inner",
         suffixes=("_yield", "_fert")
     )
+
+    # Remove rows with missing values
+    df_crop = df_crop.dropna(
+        subset=["Value_yield", "Value_fert"]
+    )
+
+    # Prevent modeling on tiny datasets
+    if len(df_crop) < 10:
+        return None
+
     return df_crop
 
 crop = st.session_state.get("crop", "Wheat")
 crop2 = st.session_state.get("crop2", None)
+
+if df_crop_main is None:
+    st.error(
+        f"❌ {crop} does not have enough clean fertilizer and yield data for analysis."
+    )
+    st.stop()
+
+if crop2 and df_crop_second is None:
+    st.warning(
+        f"⚠️ {crop2} does not have enough clean fertilizer and yield data for comparison."
+    )
 
 # -----------------------------
 # NOTEBOOK STARTS HERE
@@ -2918,31 +2951,21 @@ Experiment with more advanced models such as Random Forest, Gradient Boosting, a
 
 st.header("🏁 Final Project Conclusion")
 
-project_conclusion = st.text_area(
-    "Final Conclusion",
-    value=f"""
+final_project_conclusion = st.text_area(
+    "Final Project Conclusion",
+    value="""
 This project set out with a simple but important goal:
-
 understand how fertilizer influences crop yield, identify where returns begin to level off, and pinpoint the application rate that maximizes productivity without drifting into waste or environmental harm.
 
-### Key Findings
+(Add your key findings, recommended fertilizer rates, and observations about diminishing returns here)
 
-Global fertilizer use has increased substantially over time, with nitrogen dominating application rates worldwide. Crop yield generally increases as fertilizer use rises, but the relationship is not perfectly linear.
-
-For both {crop} and {crop2}, polynomial regression revealed diminishing returns, demonstrating that additional fertilizer eventually produces progressively smaller gains in yield.
-
-The modeling process identified crop-specific optimal fertilizer levels and showed that each crop responds differently to nutrient application. These differences highlight the importance of crop-specific fertilizer management strategies rather than relying on a single recommendation for all agricultural systems.
-
-The comparison analysis further demonstrated that fertilizer efficiency varies between crops, reinforcing the need to balance productivity with environmental stewardship.
-
-This project forms a strong baseline for future work. Incorporating soil data, weather patterns, nutrient ratios, or region-specific conditions would further improve predictive performance, but even at this stage, the takeaway is clear:
+This project forms a strong baseline for future work. Incorporating soil data, weather patterns, nutrient ratios, or region-specific conditions could further improve prediction accuracy, but even at this stage, the takeaway is clear:
 
 smarter fertilizer use isn't just possible, it's measurable.
 
 Finding the balance between yield and environmental impact is both a data problem and a sustainability opportunity.
 """,
-    height=500,
-    key="project_conclusion"
+    height=300,
 )
 
 st.header("🤖 About the AI Assistant")
