@@ -206,6 +206,11 @@ if _client and chat_query:
                         "If information is available in a chart, section, table, text area, or visualization within the application, direct users there instead of referring to repository contents. "
                         "Do not tell users to check files, notebooks, code, source code, repository contents, or project documents. "
                         "Always answer as a guide to using the application rather than as a developer describing source code, files, or repository contents. "
+                        "When explaining regression model results, avoid describing models as "bad," "poor," or "ineffective" based solely on RMSE or R² values. "
+                        "This project analyzes fertilizer application as a single explanatory variable. Crop yield is also influenced by rainfall, soil conditions, temperature, irrigation, pests, genetics, and management practices. "
+                        "Models 1 and 2 are included primarily to visualize fertilizer-yield relationships and support the fertilizer optimization recommendation generated in Model 3. "
+                        "If model performance metrics are weak, explain that fertilizer alone may not capture the full complexity of crop production and that additional agricultural variables are often needed to improve predictive performance. "
+                        "Interpret results as insights into fertilizer response rather than as complete crop-yield prediction systems. "
                         f"\n\nRepository Context:\n{context}"
                     ),
                 },
@@ -1138,7 +1143,7 @@ crop_modeling_intro = st.text_area(
     recommendation for optimal nutrient application.
     """,
     height=200,
-    key="crop_modeling_intro"
+    key=f"crop_modeling_intro_{crop}"
 )
 st.subheader(f"Prepare {crop} Dataset for Regression")
 crop_prep_notes = st.text_area(
@@ -1148,7 +1153,7 @@ crop_prep_notes = st.text_area(
     yield, and the fertilizer applied that year. This merged dataset serves as the foundation for all three {crop} models that follow.
     """,
     height=150,
-    key="crop_prep_notes"
+    key=f"crop_prep_notes_{crop}"
 )
 st.code("""
 # Filter to the user-selected crop
@@ -1247,7 +1252,7 @@ else:
         crop performance.
         """,
         height=180,
-        key="yield_over_time_interpretation"
+        key=f"yield_over_time_interpretation_{crop}"
     )
     
     st.subheader(f"Visualize Fertilizer vs {crop} Yield")
@@ -1322,7 +1327,7 @@ else:
         variability in the data.
         """,
         height=180,
-        key="yield_vs_fert_interpretation"
+        key=f"yield_vs_fert_interpretation_{crop}"
     )
     
     # Correlation
@@ -1349,7 +1354,7 @@ else:
         fertilizer application.
         """,
         height=180,
-        key="correlation_explanation"
+        key=f"correlation_explanation_{crop}"
     )
     # -----------------------------
 # MODEL 1: LINEAR REGRESSION
@@ -1365,7 +1370,7 @@ linear_intro = st.text_area(
 Linear regression establishes the baseline relationship between fertilizer use and {crop} yield. This model fits a straight line to the data to measure how much yield increases for each additional kilogram of fertilizer applied. It provides the simplest possible view of the fertilizer–yield relationship and serves as the foundation for comparing more advanced models.
 """,
     height=180,
-    key="linear_intro"
+    key=f"linear_intro_{crop}"
 )
 st.code("""
 # Features and target
@@ -1482,7 +1487,7 @@ linear_interpretation = st.text_area(
 Discuss how closely the model's predictions align with actual {crop} yields. Evaluate the RMSE and R² values, identify any prediction errors, and explain what the results suggest about the usefulness of fertilizer application as a predictor of crop yield.
 """,
     height=150,
-    key="linear_interpretation"
+    key=f"linear_interpretation_{crop}"
 )
 
 # -----------------------------
@@ -1502,7 +1507,7 @@ Polynomial regression allows the model to capture curvature in the fertilizer–
 To model this behavior, I introduce a second-degree polynomial term. This enables the model to fit a curved response and better reflect real-world fertilizer efficiency patterns.
 """,
     height=180,
-    key="poly_intro"
+    key=f"poly_intro_{crop}"
 )
 
 st.code("""
@@ -1673,7 +1678,7 @@ poly_interpretation = st.text_area(
 Discuss how the polynomial model compares with the linear regression model. Explain whether introducing curvature improves predictive performance and whether the model better captures diminishing returns in the fertilizer-yield relationship. Use the RMSE and R² values to support your interpretation.
 """,
     height=150,
-    key="poly_interpretation"
+    key=f"poly_interpretation_{crop}"
 )
 
 # -----------------------------
@@ -1691,7 +1696,7 @@ optimal_intro = st.text_area(
 To turn the curved relationship from Model 2 into a practical recommendation, Model 3 identifies the exact fertilizer level where predicted {crop} yield reaches its maximum before diminishing returns begin. This step translates the polynomial curve into a real-world decision point: the fertilizer "sweet spot" that maximizes yield without unnecessary input use.
 """,
     height=180,
-    key="optimal_intro"
+    key=f"optimal_intro_{crop}"
 )
 
 st.code("""
@@ -1837,7 +1842,7 @@ optimal_interpretation = st.text_area(
 Interpret the optimal fertilizer level identified by the polynomial model. Discuss why yield begins to level off beyond this point and explain how the recommendation could help balance agricultural productivity with fertilizer efficiency and sustainability objectives.
 """,
     height=150,
-    key="optimal_interpretation"
+    key=f"optimal_interpretation_{crop}"
 )
 
 crop_summary = st.text_area(
@@ -1854,7 +1859,7 @@ Model 3 converted the polynomial curve into a practical recommendation by identi
 Together, these models demonstrate how fertilizer influences {crop} productivity while highlighting the point where additional fertilizer provides progressively smaller gains. The results provide a data-driven foundation for improving nutrient efficiency and supporting more sustainable fertilizer management decisions.
 """,
     height=300,
-    key="crop_summary"
+    key=f"crop_summary_{crop}"
 )
 
 if crop2 and df_crop_second is not None:
@@ -1873,7 +1878,7 @@ if crop2 and df_crop_second is not None:
     This section applies the same modeling workflow to {crop2}. By keeping the methodology consistent, the results from both crops can be compared directly to evaluate how fertilizer influences yield across different agricultural systems.
     """,
         height=150,
-        key="crop2_intro"
+        key=f"crop2_intro_{crop2}"
     )
     
     st.subheader(
@@ -1886,7 +1891,7 @@ if crop2 and df_crop_second is not None:
     This dataset merges global {crop2} yield with global fertilizer use by year. It mirrors the {crop} workflow so both crops can be compared consistently.
     """,
         height=120,
-        key="crop2_prep_notes"
+        key=f"crop2_prep_notes_{crop2}"
     )
     
     st.code("""
@@ -1934,7 +1939,7 @@ if crop2 and df_crop_second is not None:
     This plot shows how global {crop2} yield has changed across decades.
     """,
         height=120,
-        key="crop2_yield_notes"
+        key=f"crop2_yield_notes_{crop2}"
     )
     
     st.code("""
@@ -1992,7 +1997,7 @@ if crop2 and df_crop_second is not None:
     Describe the long-term yield trend for {crop2}. Discuss whether yields increased steadily, experienced periods of stagnation, or changed rapidly during certain decades. Consider how advances in agricultural practices, genetics, and fertilizer use may have influenced these trends.
     """,
         height=150,
-        key="crop2_yield_interpretation"
+        key=f"crop2_yield_interpretation_{crop2}"
     )
     
     # -----------------------------
@@ -2009,7 +2014,7 @@ if crop2 and df_crop_second is not None:
     This model establishes the baseline relationship between fertilizer use and {crop2} yield. It measures how much yield increases for each additional kilogram of fertilizer applied.
     """,
         height=140,
-        key="crop2_linear_intro"
+        key=f"crop2_linear_intro_{crop2}"
     )
     
     st.code("""
@@ -2112,7 +2117,7 @@ if crop2 and df_crop_second is not None:
     This chart compares the model's predictions to real yield values. It shows how well a simple linear model captures the fertilizer-yield relationship.
     """,
         height=120,
-        key="crop2_actual_pred_notes"
+        key=f"crop2_actual_pred_notes_{crop2}"
     )
     
     st.code("""
@@ -2179,7 +2184,7 @@ if crop2 and df_crop_second is not None:
     Discuss how closely the model's predictions align with actual {crop2} yields. Explain what the RMSE and R² values indicate about model performance and whether fertilizer use alone appears to be a strong predictor of yield.
     """,
         height=150,
-        key="crop2_model1_interpretation"
+        key=f"crop2_model1_interpretation_{crop2}"
     )
     
     # -----------------------------
@@ -2194,7 +2199,7 @@ if crop2 and df_crop_second is not None:
     This scatter plot visualizes the relationship between fertilizer application and {crop2} yield.
     """,
         height=120,
-        key="crop2_fert_notes"
+        key=f"crop2_fert_notes_{crop2}"
     )
     
     st.code("""
@@ -2336,7 +2341,7 @@ if crop2 and df_crop_second is not None:
     Explain the relationship between fertilizer use and {crop2} yield. Discuss whether higher fertilizer application generally corresponds with higher yields, identify any visible trends in the data, and note whether the relationship appears strong, weak, linear, or nonlinear.
     """,
         height=150,
-        key="crop2_yield_vs_fert_interpretation"
+        key=f"crop2_yield_vs_fert_interpretation_{crop2}"
     )
     
     # -----------------------------
@@ -2353,7 +2358,7 @@ if crop2 and df_crop_second is not None:
     Polynomial regression captures the curved, diminishing-returns pattern in {crop2} yield. This model better reflects real agronomic behavior than a straight line.
     """,
         height=120,
-        key="crop2_poly_intro"
+        key=f"crop2_poly_intro_{crop2}"
     )
     
     st.code("""
@@ -2477,7 +2482,7 @@ if crop2 and df_crop_second is not None:
     This plot evaluates how well the polynomial model predicts {crop2} yield.
     """,
         height=120,
-        key="crop2_poly_chart_notes"
+        key=f"crop2_poly_chart_notes_{crop2}"
     )
     
     st.code("""
@@ -2544,7 +2549,7 @@ if crop2 and df_crop_second is not None:
     Discuss how the polynomial model compares with the linear regression model. Explain whether introducing curvature improves predictive performance, whether the model better captures diminishing returns, and how the RMSE and R² values compare with Model 1.
     """,
         height=150,
-        key="crop2_model2_interpretation"
+        key=f"crop2_model2_interpretation_{crop2}"
     )
     
     # -----------------------------
@@ -2561,7 +2566,7 @@ if crop2 and df_crop_second is not None:
     This chart shows the polynomial curve, the real data points, and the exact optimal fertilizer level for {crop2}.
     """,
         height=120,
-        key="crop2_optimal_intro"
+        key=f"crop2_optimal_intro_{crop2}"
     )
     
     st.code("""
@@ -2709,7 +2714,7 @@ if crop2 and df_crop_second is not None:
     Interpret the optimal fertilizer level identified for {crop2}. Discuss why yields begin to level off beyond this point, how the polynomial model identifies diminishing returns, and how this recommendation could support more efficient fertilizer management.
     """,
         height=150,
-        key="crop2_model3_interpretation"
+        key=f"crop2_model3_interpretation_{crop2}"
     )
     crop2_summary = st.text_area(
         f"{crop2} Model Section Summary",
@@ -2725,7 +2730,7 @@ if crop2 and df_crop_second is not None:
     Together, these models demonstrate how fertilizer influences {crop2} productivity while highlighting the point where additional fertilizer provides progressively smaller gains. The results provide a data-driven foundation for improving nutrient efficiency and supporting more sustainable fertilizer management decisions.
     """,
         height=300,
-        key="crop2_summary"
+        key=f"crop2_summary_{crop2}"
     )
     
     st.header(
@@ -2739,7 +2744,7 @@ if crop2 and df_crop_second is not None:
     This comparison visualizes how {crop} and {crop2} respond to fertilizer application across the same fertilizer range. The polynomial response curves highlight differences in yield behavior, while the optimal points identify the fertilizer levels associated with maximum predicted yield for each crop.
     """,
             height=150,
-            key="comparison_intro"
+            key=f"comparison_intro_{crop}_{crop2}"
         )
     else:
         comparison_intro = st.text_area(
@@ -2748,7 +2753,7 @@ if crop2 and df_crop_second is not None:
     This analysis explores how {crop} responds to fertilizer application. The polynomial response curve highlights yield behavior across different fertilizer levels, while the optimal point identifies the fertilizer level associated with maximum predicted yield.
     """,
             height=180,
-            key="comparison_intro"
+            key=f"comparison_intro_{crop}"
         )
     
     st.code("""
@@ -2922,7 +2927,7 @@ if crop2 and df_crop_second is not None:
     Compare the fertilizer-response behavior of {crop} and {crop2}. Discuss which crop appears more responsive to fertilizer application, whether one crop reaches diminishing returns sooner, and how their optimal fertilizer levels differ. Consider the implications for nutrient management and crop-specific sustainability strategies.
     """,
         height=150,
-        key="comparison_interpretation"
+        key=f"comparison_interpretation_{crop}_{crop2}"
     )
 
 # -----------------------------
