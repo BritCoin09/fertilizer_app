@@ -354,6 +354,7 @@ global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_in
 # -----------------------------
 # Build crop datasets
 # -----------------------------
+@st.cache_data
 def build_crop_df(crop_name: str):
 
     if crop_name is None:
@@ -1702,7 +1703,13 @@ x_range = np.linspace(
 a = model2.coef_[1]
 b = model2.coef_[0]
 
-x_opt = -b / (2 * a)
+if abs(a) < 1e-10:
+    x_opt = None
+    st.warning(
+        "⚠️ Polynomial curve does not contain a clear optimum."
+    )
+else:
+    x_opt = -b / (2 * a)
 
 # Compute optimal fertilizer level
 x_opt_df = pd.DataFrame(
@@ -2568,26 +2575,30 @@ if crop2 and df_crop_second is not None:
         200
     )
     
-    # Extract coefficients
     a2 = model2_2.coef_[1]
-    b2 = model2_2.coef_[0]
-    
-    # Compute optimal fertilizer level
+b2 = model2_2.coef_[0]
+
+if abs(a2) < 1e-10:
+    x_opt2 = None
+    y_opt2 = None
+
+    st.warning(
+        f"⚠️ No clear fertilizer optimum could be determined for {crop2}."
+    )
+else:
     x_opt2 = -b2 / (2 * a2)
-    
-    # Predicted yield at the optimum
+
     x_opt_df2 = pd.DataFrame(
         {"Value_fert": [x_opt2]}
     )
-    
+
     x_opt_poly2 = poly2.transform(
         x_opt_df2
     )
-    
+
     y_opt2 = model2_2.predict(
         x_opt_poly2
     )[0]
-    """)
     
     x_range2 = np.linspace(
         df_crop_second["Value_fert"].min(),
@@ -2613,19 +2624,26 @@ if crop2 and df_crop_second is not None:
     )[0]
     
     st.write("### Model Results")
+
+    if x_opt2 is not None and y_opt2 is not None:
     
-    col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
     
-    with col1:
-        st.metric(
-            "Optimal Fertilizer (kg/ha)",
-            f"{x_opt2:.2f}"
-        )
+        with col1:
+            st.metric(
+                "Optimal Fertilizer (kg/ha)",
+                f"{x_opt2:.2f}"
+            )
     
-    with col2:
-        st.metric(
-            "Predicted Yield at Optimum",
-            f"{y_opt2:.2f}"
+        with col2:
+            st.metric(
+                "Predicted Yield at Optimum",
+                f"{y_opt2:.2f}"
+            )
+    
+    else:
+        st.warning(
+            f"⚠️ No clear fertilizer optimum could be determined for {crop2}."
         )
     
     x_range_df2 = pd.DataFrame(
@@ -2666,15 +2684,16 @@ if crop2 and df_crop_second is not None:
         label="Data Points"
     )
     
-    ax.scatter(
-        x_opt2,
-        y_opt2,
-        color=fert_background,
-        s=120,
-        edgecolor="black",
-        zorder=5,
-        label=f"Optimal Point ({x_opt2:.1f} kg/ha)"
-    )
+    if x_opt2 is not None:
+        ax.scatter(
+            x_opt2,
+            y_opt2,
+            color=fert_background,
+            s=120,
+            edgecolor="black",
+            zorder=5,
+            label=f"Optimal Point ({x_opt2:.1f} kg/ha)"
+        )
     
     ax.set_title(
         f"{crop2} Model 3: Optimal Fertilizer Level for Maximum Yield",
