@@ -2617,22 +2617,6 @@ if crop2 and df_crop_second is not None:
             200
         )
     
-    a2 = model2_2.coef_[1]
-    b2 = model2_2.coef_[0]
-    
-    x_opt2 = -b2 / (2 * a2)
-    
-    x_opt_df2 = pd.DataFrame(
-        {"Value_fert": [x_opt2]}
-    )
-    
-    x_opt_poly2 = poly2.transform(
-        x_opt_df2
-    )
-    
-    y_opt2 = model2_2.predict(
-        x_opt_poly2
-    )[0]
     
     st.write("### Model Results")
 
@@ -2655,7 +2639,7 @@ if crop2 and df_crop_second is not None:
     else:
         st.warning(
             f"⚠️ No clear fertilizer optimum could be determined for {crop2}."
-        )
+        """)
     
     x_range_df2 = pd.DataFrame(
         {"Value_fert": x_range2}
