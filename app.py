@@ -1705,23 +1705,25 @@ b = model2.coef_[0]
 
 if abs(a) < 1e-10:
     x_opt = None
+    y_opt = None
+
     st.warning(
-        "⚠️ Polynomial curve does not contain a clear optimum."
+        f"⚠️ No clear fertilizer optimum could be determined for {crop}."
     )
 else:
     x_opt = -b / (2 * a)
 
-# Compute optimal fertilizer level
-x_opt_df = pd.DataFrame(
-    {"Value_fert": [x_opt]}
-)
+    x_opt_df = pd.DataFrame(
+        {"Value_fert": [x_opt]}
+    )
 
-x_opt_poly = poly.transform(x_opt_df)
+    x_opt_poly = poly.transform(
+        x_opt_df
+    )
 
-y_opt = model2.predict(
-    x_opt_poly
-)[0]
-""")
+    y_opt = model2.predict(
+        x_opt_poly
+    )[0]
 x_range = np.linspace(
     df_crop_main["Value_fert"].min(),
     df_crop_main["Value_fert"].max(),
@@ -1746,18 +1748,25 @@ y_opt = model2.predict(
 )[0]
 st.write("### Model Results")
 
-col1, col2 = st.columns(2)
+if x_opt is not None and y_opt is not None:
 
-with col1:
-    st.metric(
-        "Optimal Fertilizer (kg/ha)",
-        f"{x_opt:.2f}"
-    )
+    col1, col2 = st.columns(2)
 
-with col2:
-    st.metric(
-        "Predicted Yield at Optimum",
-        f"{y_opt:.2f}"
+    with col1:
+        st.metric(
+            "Optimal Fertilizer (kg/ha)",
+            f"{x_opt:.2f}"
+        )
+
+    with col2:
+        st.metric(
+            "Predicted Yield at Optimum",
+            f"{y_opt:.2f}"
+        )
+else:
+
+    st.warning(
+        f"⚠️ No clear fertilizer optimum could be determined for {crop}."
     )
 x_range_df = pd.DataFrame(
     {"Value_fert": x_range}
@@ -1796,15 +1805,17 @@ ax.scatter(
     label="Data Points"
 )
 
-ax.scatter(
-    x_opt,
-    y_opt,
-    color=fert_background,
-    s=120,
-    edgecolor="black",
-    zorder=5,
-    label=f"Optimal Point ({x_opt:.1f} kg/ha)"
-)
+if x_opt is not None:
+
+    ax.scatter(
+        x_opt,
+        y_opt,
+        color=fert_background,
+        s=120,
+        edgecolor="black",
+        zorder=5,
+        label=f"Optimal Point ({x_opt:.1f} kg/ha)"
+    )
 
 ax.set_title(
     f"Model 3: Optimal Fertilizer Level for Maximum {crop} Yield",
