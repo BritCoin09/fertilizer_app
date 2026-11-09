@@ -1697,7 +1697,7 @@ x_range = np.linspace(
     df_crop["Value_fert"].min(),
     df_crop["Value_fert"].max(),
     200
-)
+""")
 
 # Extract coefficients
 a = model2.coef_[1]
@@ -2014,8 +2014,8 @@ if crop2 and df_crop_second is not None:
     # -----------------------------
     
     st.subheader(
-        f"{crop2_emoji} Prepare {crop2} Dataset for Modeling"
-    )
+        f"{crop2_emoji} {crop2} Model 1: Linear Regression"
+    )    
     
     crop2_linear_intro = st.text_area(
         "Model 1 Introduction",
