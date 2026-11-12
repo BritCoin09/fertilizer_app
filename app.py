@@ -2578,17 +2578,15 @@ if crop2 and df_crop_second is not None:
         key=f"crop2_optimal_intro_{crop2}"
     )
     
-    st.code("""
-    # Smooth range of fertilizer values for plotting
     x_range2 = np.linspace(
-        df_crop2["Value_fert"].min(),
-        df_crop2["Value_fert"].max(),
-        200
-    )
+            df_crop_second["Value_fert"].min(),
+            df_crop_second["Value_fert"].max(),
+            200
+        )
     
     a2 = model2_2.coef_[1]
     b2 = model2_2.coef_[0]
-
+    
     if abs(a2) < 1e-10:
         x_opt2 = None
         y_opt2 = None
@@ -2610,13 +2608,6 @@ if crop2 and df_crop_second is not None:
         y_opt2 = model2_2.predict(
             x_opt_poly2
         )[0]
-        
-        x_range2 = np.linspace(
-            df_crop_second["Value_fert"].min(),
-            df_crop_second["Value_fert"].max(),
-            200
-        )
-    
     
     st.write("### Model Results")
 
@@ -2639,7 +2630,7 @@ if crop2 and df_crop_second is not None:
     else:
         st.warning(
             f"⚠️ No clear fertilizer optimum could be determined for {crop2}."
-        """)
+        )
     
     x_range_df2 = pd.DataFrame(
         {"Value_fert": x_range2}
@@ -2804,18 +2795,22 @@ if crop2 and df_crop_second is not None:
         X_curve
     )
     
-    coef_11 = model2.coef_[0]
-    coef_12 = model2.coef_[1]
-    
-    x_opt = -coef_11 / (2 * coef_12)
-    
-    x_opt_df = pd.DataFrame(
-        {"Value_fert": [x_opt]}
-    )
-    
-    y_opt = model2.predict(
-        poly.transform(x_opt_df)
-    )[0]
+   coef_11 = model2.coef_[0]
+   coef_12 = model2.coef_[1]
+
+   if abs(coef_12) < 1e-10:
+       x_opt = None
+       y_opt = None
+   else:
+       x_opt = -coef_11 / (2 * coef_12)
+
+       x_opt_df = pd.DataFrame(
+           {"Value_fert": [x_opt]}
+       )
+
+       y_opt = model2.predict(
+           poly.transform(x_opt_df)
+       )[0]
     
     # -----------------------------
     # Crop 2 curve
@@ -2836,15 +2831,19 @@ if crop2 and df_crop_second is not None:
     coef_21 = model2_2.coef_[0]
     coef_22 = model2_2.coef_[1]
     
-    x_opt_2 = -coef_21 / (2 * coef_22)
+    if abs(coef_22) < 1e-10:
+        x_opt_2 = None
+        y_opt_2 = None
+    else:
+        x_opt_2 = -coef_21 / (2 * coef_22)
     
-    x_opt_df_2 = pd.DataFrame(
-        {"Value_fert": [x_opt_2]}
-    )
+        x_opt_df_2 = pd.DataFrame(
+            {"Value_fert": [x_opt_2]}
+        )
     
-    y_opt_2 = model2_2.predict(
-        poly2.transform(x_opt_df_2)
-    )[0]
+        y_opt_2 = model2_2.predict(
+            poly2.transform(x_opt_df_2)
+        )[0]
     
     # -----------------------------
     # Plot
@@ -2868,15 +2867,17 @@ if crop2 and df_crop_second is not None:
         label=f"{crop} Curve"
     )
     
-    ax.scatter(
-        x_opt,
-        y_opt,
-        color=fert_background,
-        s=120,
-        edgecolor="black",
-        zorder=5,
-        label=f"{crop} Optimum ({x_opt:.1f} kg/ha)"
-    )
+    if x_opt is not None:
+        ax.scatter(
+            x_opt,
+            y_opt,
+            color=fert_background,
+            s=120,
+            edgecolor="black",
+            zorder=5,
+            label=f"{crop} Optimum ({x_opt:.1f} kg/ha)"
+        )
+
     
     # Crop 2
     
@@ -2888,15 +2889,16 @@ if crop2 and df_crop_second is not None:
         label=f"{crop2} Curve"
     )
     
-    ax.scatter(
-        x_opt_2,
-        y_opt_2,
-        color=fert_background,
-        s=120,
-        edgecolor="black",
-        zorder=5,
-        label=f"{crop2} Optimum ({x_opt_2:.1f} kg/ha)"
-    )
+    if x_opt_2 is not None:
+        ax.scatter(
+            x_opt_2,
+            y_opt_2,
+            color=fert_background,
+            s=120,
+            edgecolor="black",
+            zorder=5,
+            label=f"{crop2} Optimum ({x_opt_2:.1f} kg/ha)"
+        )
     
     ax.set_title(
         f"{crop} vs {crop2}: Fertilizer–Yield Response Curves",
