@@ -2795,19 +2795,19 @@ if crop2 and df_crop_second is not None:
         X_curve
     )
     
-   coef_11 = model2.coef_[0]
-   coef_12 = model2.coef_[1]
-
-   if abs(coef_12) < 1e-10:
+    coef_11 = model2.coef_[0]
+    coef_12 = model2.coef_[1]
+    
+    if abs(coef_12) < 1e-10:
        x_opt = None
        y_opt = None
-   else:
+    else:
        x_opt = -coef_11 / (2 * coef_12)
-
+    
        x_opt_df = pd.DataFrame(
            {"Value_fert": [x_opt]}
        )
-
+    
        y_opt = model2.predict(
            poly.transform(x_opt_df)
        )[0]
