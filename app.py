@@ -1024,10 +1024,23 @@ with st.form("crop_selection_form"):
         available_crops
     )
 
+    crop = st.selectbox(
+        "Primary Crop",
+        available_crops
+    )
+    
+    crop2_options = [
+        c for c in available_crops
+        if c != crop
+    ]
+    
     crop2 = st.selectbox(
         "Comparison Crop (Optional)",
-        ["None"] + available_crops
+        ["None"] + crop2_options
     )
+    
+    if crop2 == "None":
+        crop2 = None
 
     if crop2 == "None":
         crop2 = None
