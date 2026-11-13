@@ -1023,11 +1023,6 @@ with st.form("crop_selection_form"):
         "Primary Crop",
         available_crops
     )
-
-    crop = st.selectbox(
-        "Primary Crop",
-        available_crops
-    )
     
     crop2_options = [
         c for c in available_crops
