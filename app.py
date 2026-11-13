@@ -233,39 +233,47 @@ if st.session_state.get("crop2"):
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
 
-crop1_color = st.sidebar.color_picker(
-    "Crop 1 Color",
-    "#4A7C59"
-)
+with st.sidebar.form("style_form"):
 
-crop1_background = st.sidebar.color_picker(
-    "Crop 1 Background",
-    "#DDEEE3"
-)
-
-if st.session_state.get("crop2"):
-    crop2_color = st.sidebar.color_picker(
-        "Crop 2 Color",
-        "#B58A4A"
+    crop1_color = st.color_picker(
+        "Crop 1 Color",
+        "#4A7C59"
     )
 
-    crop2_background = st.sidebar.color_picker(
-        "Crop 2 Background",
-        "#F5F1E6"
+    crop1_background = st.color_picker(
+        "Crop 1 Background",
+        "#DDEEE3"
     )
-else:
-    crop2_color = None
-    crop2_background = None
-    
-crop1_emoji = st.sidebar.text_input(
-    "Crop 1 Emoji",
-    value="🌾"
-)
 
-crop2_emoji = st.sidebar.text_input(
-    "Crop 2 Emoji",
-    value="🌱"
-)
+    if st.session_state.get("crop2"):
+
+        crop2_color = st.color_picker(
+            "Crop 2 Color",
+            "#B58A4A"
+        )
+
+        crop2_background = st.color_picker(
+            "Crop 2 Background",
+            "#F5F1E6"
+        )
+
+    else:
+        crop2_color = None
+        crop2_background = None
+
+    crop1_emoji = st.text_input(
+        "Crop 1 Emoji",
+        value="🌾"
+    )
+
+    crop2_emoji = st.text_input(
+        "Crop 2 Emoji",
+        value="🌱"
+    )
+
+    apply_style = st.form_submit_button(
+        "🎨 Apply Style"
+    )
 
 fert_background = "#4A7C59"
 # -----------------------------
@@ -1010,12 +1018,20 @@ available_crops = sorted(
 )
 
 
-selected_crops = st.multiselect(
-    "Choose up to 2 crops",
-    available_crops,
-    max_selections=2
-)
+with st.form("crop_selection_form"):
 
+        selected_crops = st.multiselect(
+            "Choose up to 2 crops",
+            available_crops,
+            max_selections=2
+        )
+    
+        submit_crops = st.form_submit_button(
+            "Run Analysis"
+        )
+if not submit_crops:
+    st.stop()
+    
 if len(selected_crops) == 0:
     st.warning("⚠️ Please select at least one crop.")
     st.stop()
