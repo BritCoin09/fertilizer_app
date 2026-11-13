@@ -392,15 +392,6 @@ def build_crop_df(crop_name: str):
     df_crop = df_crop.dropna(
         subset=["Value_yield", "Value_fert"]
     )
-
-    # Data quality safeguard
-    if df_crop["Year"].nunique() < 50:
-        return None
-
-    # Prevent modeling on tiny datasets
-    if len(df_crop) < 10:
-        return None
-
     return df_crop
 
 crop = st.session_state.get("crop", "Wheat")
