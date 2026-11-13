@@ -1017,35 +1017,28 @@ available_crops = sorted(
     if crop not in exclude_crops
 )
 
-
 with st.form("crop_selection_form"):
 
-        selected_crops = st.multiselect(
-            "Choose up to 2 crops",
-            available_crops,
-            max_selections=2
-        )
-    
-        st.write("")
-        st.write("")
-        st.write("")
+    crop = st.selectbox(
+        "Primary Crop",
+        available_crops
+    )
 
-        submit_crops = st.form_submit_button(
-            "Run Analysis"
-        )
+    crop2 = st.selectbox(
+        "Comparison Crop (Optional)",
+        ["None"] + available_crops
+    )
+
+    if crop2 == "None":
+        crop2 = None
+
+    submit_crops = st.form_submit_button(
+        "🚀 Run Analysis",
+        use_container_width=True
+    )
+
 if not submit_crops:
     st.stop()
-    
-if len(selected_crops) == 0:
-    st.warning("⚠️ Please select at least one crop.")
-    st.stop()
-
-crop = selected_crops[0]
-
-if len(selected_crops) > 1:
-    crop2 = selected_crops[1]
-else:
-    crop2 = None
 
 st.session_state.crop = crop
 st.session_state.crop2 = crop2
