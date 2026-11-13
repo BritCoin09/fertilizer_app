@@ -976,6 +976,9 @@ st.subheader(
 
 exclude_crops = [
     "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
     "Eggs from other birds in shell, fresh, n.e.c.",
     "Hen eggs in shell, fresh",
     "Milk, Total",
