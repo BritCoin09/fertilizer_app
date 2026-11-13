@@ -1026,6 +1026,10 @@ with st.form("crop_selection_form"):
             max_selections=2
         )
     
+        st.write("")
+        st.write("")
+        st.write("")
+
         submit_crops = st.form_submit_button(
             "Run Analysis"
         )
