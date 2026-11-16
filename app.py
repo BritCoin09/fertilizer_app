@@ -239,6 +239,9 @@ if st.session_state.get("crop2"):
 st.sidebar.markdown("---")
 st.sidebar.subheader("💾 Project Management")
 
+if "project_loaded" not in st.session_state:
+    st.session_state.project_loaded = False
+    
 project_data = {}
 
 excluded_keys = {
@@ -273,7 +276,10 @@ uploaded_project = st.sidebar.file_uploader(
     type=["json"]
 )
 
-if uploaded_project is not None:
+if (
+    uploaded_project is not None
+    and not st.session_state.project_loaded
+):
 
     loaded_data = json.load(uploaded_project)
 
@@ -290,13 +296,10 @@ if uploaded_project is not None:
         ):
             continue
 
-        try:
-            st.session_state[key] = value
-
-        except Exception:
-            pass
+        st.session_state[key] = value
 
     st.session_state.analysis_ran = True
+    st.session_state.project_loaded = True
 
     st.sidebar.success(
         "✅ Project loaded successfully!"
@@ -386,10 +389,7 @@ new_project = st.sidebar.button(
 
 if new_project:
 
-    keys_to_remove = list(st.session_state.keys())
-
-    for key in keys_to_remove:
-        del st.session_state[key]
+    st.session_state.clear()
 
     st.rerun()
     
