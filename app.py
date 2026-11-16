@@ -25,6 +25,7 @@ st.set_page_config(
     page_title="Sustainable Fertilizer Optimization",
     layout="wide"
 )
+fert_background = "#4A7C59"
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -268,7 +269,15 @@ with st.sidebar.form("style_form"):
 
     st.form_submit_button("✨ Update Theme")
 
-fert_background = "#4A7C59"
+if update_theme:
+
+    st.session_state.crop1_color = new_crop1_color
+    st.session_state.crop1_background = new_crop1_background
+
+    if st.session_state.get("crop2"):
+        st.session_state.crop2_color = new_crop2_color
+        st.session_state.crop2_background = new_crop2_background
+
 # -----------------------------
 # Load data
 # -----------------------------
@@ -1009,7 +1018,7 @@ available_crops = sorted(
     crop for crop in crop_yield_only["Item"].unique()
     if crop not in exclude_crops
 )
-
+    
 with st.form("crop_selection_form"):
 
     crop = st.selectbox(
