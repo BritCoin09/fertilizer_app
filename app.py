@@ -301,11 +301,16 @@ st.sidebar.subheader("💾 Project Management")
 
 project_data = {}
 
+excluded_keys = {
+    "chat_input"
+}
+
 for key, value in st.session_state.items():
 
     if (
         key.startswith("FormSubmitter")
         or key.startswith("_")
+        or key in excluded_keys
     ):
         continue
 
@@ -327,17 +332,29 @@ uploaded_project = st.sidebar.file_uploader(
     "📂 Load Project",
     type=["json"]
 )
+
 if uploaded_project is not None:
 
     loaded_data = json.load(uploaded_project)
 
+    excluded_keys = {
+        "chat_input"
+    }
+
     for key, value in loaded_data.items():
 
-        if key.startswith("FormSubmitter"):
+        if (
+            key.startswith("FormSubmitter")
+            or key.startswith("_")
+            or key in excluded_keys
+        ):
             continue
-    
-        st.session_state[key] = value
 
+        try:
+            st.session_state[key] = value
+
+        except Exception:
+            pass
 
     st.session_state.analysis_ran = True
 
@@ -346,6 +363,7 @@ if uploaded_project is not None:
     )
 
     st.rerun()
+
 
 reset_theme = st.sidebar.button(
     "🔄 Reset Theme"
