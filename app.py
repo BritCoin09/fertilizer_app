@@ -270,7 +270,28 @@ if update_theme:
         st.session_state.crop2_color = new_crop2_color
         st.session_state.crop2_background = new_crop2_background
 
+crop1_color = st.session_state.get(
+    "crop1_color",
+    "#4A7C59"
+)
 
+crop1_background = st.session_state.get(
+    "crop1_background",
+    "#DDEEE3"
+)
+
+crop2_color = st.session_state.get(
+    "crop2_color",
+    "#B58A4A"
+)
+
+crop2_background = st.session_state.get(
+    "crop2_background",
+    "#F5F1E6"
+)
+
+crop1_emoji = "🌾"
+crop2_emoji = "🌱"
 # -----------------------------
 # Load data
 # -----------------------------
