@@ -1017,7 +1017,8 @@ with st.form("crop_selection_form"):
 
     crop = st.selectbox(
         "Primary Crop",
-        available_crops
+        available_crops,
+        key="crop"
     )
     
     crop2_options = [
@@ -1027,14 +1028,13 @@ with st.form("crop_selection_form"):
     
     crop2 = st.selectbox(
         "Comparison Crop (Optional)",
-        ["None"] + crop2_options
+        ["None"] + crop2_options,
+        key="crop2"
     )
     
     if crop2 == "None":
         crop2 = None
-
-    if crop2 == "None":
-        crop2 = None
+        st.session_state.crop2 = None
 
     submit_crops = st.form_submit_button(
         "🚀 Run Analysis",
