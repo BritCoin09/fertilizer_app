@@ -91,8 +91,6 @@ ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 # -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
 # -------------------------------------------
-st.sidebar.markdown("---")
-st.sidebar.subheader("💾 Project Management")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
@@ -298,36 +296,26 @@ crop2_background = st.session_state.get(
 crop1_emoji = "🌾"
 crop2_emoji = "🌱"
 
+st.sidebar.markdown("---")
+st.sidebar.subheader("💾 Project Management")
+
 project_data = {
-    "crop": crop,
-    "crop2": crop2,
+    "crop": st.session_state.get("crop"),
+    "crop2": st.session_state.get("crop2"),
 
-    "crop1_color": crop1_color,
-    "crop1_background": crop1_background,
+    "crop1_color": st.session_state.get("crop1_color"),
+    "crop1_background": st.session_state.get("crop1_background"),
 
-    "crop2_color": crop2_color,
-    "crop2_background": crop2_background,
+    "crop2_color": st.session_state.get("crop2_color"),
+    "crop2_background": st.session_state.get("crop2_background"),
 
-    "problem_impact": st.session_state.get(
-        "problem_impact",
-        ""
-    ),
-
-    "project_questions": st.session_state.get(
-        "project_questions",
-        ""
-    ),
-
-    "future_work": st.session_state.get(
-        "future_work",
-        ""
-    ),
-
-    "final_project_conclusion": st.session_state.get(
-        "final_project_conclusion",
-        ""
-    )
+    "problem_impact": st.session_state.get("problem_impact"),
+    "eda_intro": st.session_state.get("eda_intro"),
+    "future_work": st.session_state.get("future_work"),
+    "project_questions": st.session_state.get("project_questions"),
+    "final_project_conclusion": st.session_state.get("final_project_conclusion")
 }
+
 
 st.sidebar.download_button(
     "💾 Save Project",
