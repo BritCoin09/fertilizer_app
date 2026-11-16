@@ -1035,7 +1035,6 @@ with st.form("crop_selection_form"):
     
     if crop2 == "None":
         crop2 = None
-        st.session_state.crop2 = None
 
     submit_crops = st.form_submit_button(
         "🚀 Run Analysis",
@@ -1044,9 +1043,6 @@ with st.form("crop_selection_form"):
 
 if not submit_crops:
     st.stop()
-
-st.session_state.crop = crop
-st.session_state.crop2 = crop2
 
 df_crop_main = build_crop_df(crop)
 df_crop_second = build_crop_df(crop2) if crop2 else None
