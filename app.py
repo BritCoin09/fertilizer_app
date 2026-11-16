@@ -230,10 +230,9 @@ if st.session_state.get("crop2"):
     st.sidebar.success(f"Crop 2: {st.session_state.crop2}")
 
 
-st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
 
-with st.sidebar:
+with st.sidebar.form("style_form"):
 
     crop1_color = st.color_picker(
         "Crop 1 Color",
@@ -257,10 +256,6 @@ with st.sidebar:
             "#F5F1E6"
         )
 
-    else:
-        crop2_color = None
-        crop2_background = None
-
     crop1_emoji = st.text_input(
         "Crop 1 Emoji",
         value="🌾"
@@ -270,6 +265,8 @@ with st.sidebar:
         "Crop 2 Emoji",
         value="🌱"
     )
+
+    st.form_submit_button("✨ Update Theme")
 
 fert_background = "#4A7C59"
 # -----------------------------
