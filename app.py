@@ -445,6 +445,109 @@ do not necessarily indicate an error. Instead, they suggest that fertilizer
 alone may not fully explain yield variation for the selected crop.
 """)
 
+st.subheader("Choose Your Crop(s)")
+crop_selection_notes = st.text_area(
+    "Crop Selection",
+    value="""
+The FAOSTAT dataset includes a diverse collection of agricultural products ranging from staple crops such as wheat, barley, rice, and maize to fruits, vegetables, legumes, and fiber crops. Select an item below to generate custom visualizations, predictive models, and fertilizer optimization insights.
+""",
+    height=150,
+    key="crop_selection_notes"
+)
+
+st.info(
+    "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
+)
+
+st.subheader(
+    f"{crop1_emoji} Select Crop(s) for Analysis {crop2_emoji}"
+)
+
+exclude_crops = [
+    "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in crop_yield_only["Item"].unique()
+    if crop not in exclude_crops
+)
+
+if "analysis_ran" not in st.session_state:
+    st.session_state.analysis_ran = False
+    
+with st.form("crop_selection_form"):
+
+    crop = st.selectbox(
+        "Primary Crop",
+        available_crops,
+        key="crop"
+    )
+    
+    crop2_options = [
+        c for c in available_crops
+        if c != crop
+    ]
+    
+    crop2 = st.selectbox(
+        "Comparison Crop (Optional)",
+        ["None"] + crop2_options,
+        key="crop2"
+    )
+    
+    if crop2 == "None":
+        crop2 = None
+
+    submit_crops = st.form_submit_button(
+        "🚀 Run Analysis",
+        use_container_width=True
+    )
+
+if submit_crops:
+    st.session_state.analysis_ran = True
+
+if not st.session_state.analysis_ran:
+    st.stop()
+
+df_crop_main = build_crop_df(crop)
+df_crop_second = build_crop_df(crop2) if crop2 else None
+
+if df_crop_main is None:
+    st.error(
+        f"❌ {crop} does not have enough clean fertilizer and yield data for analysis."
+    )
+    st.stop()
+
+if crop2 and df_crop_second is None:
+    st.warning(
+        f"⚠️ {crop2} does not have enough clean fertilizer and yield data for comparison."
+    )
+
 st.header("🌍 Problem & Impact")
 
 problem_impact = st.text_area(
@@ -979,109 +1082,6 @@ This explains the upward trend after 2010.
 # -----------------------------
 # SECTION 3: CROP MODELING
 # -----------------------------
-
-st.subheader("Choose Your Crop(s)")
-crop_selection_notes = st.text_area(
-    "Crop Selection",
-    value="""
-The FAOSTAT dataset includes a diverse collection of agricultural products ranging from staple crops such as wheat, barley, rice, and maize to fruits, vegetables, legumes, and fiber crops. Select an item below to generate custom visualizations, predictive models, and fertilizer optimization insights.
-""",
-    height=150,
-    key="crop_selection_notes"
-)
-
-st.info(
-    "Select one or two crops below. All charts, models, optimization analysis, and chatbot responses will automatically update based on your selections."
-)
-
-st.subheader(
-    f"{crop1_emoji} Select Crop(s) for Analysis {crop2_emoji}"
-)
-
-exclude_crops = [
-    "Eggs Primary",
-    "Other pome fruits",
-    "Jojoba seeds",
-    "Tallowtree seeds",
-    "Eggs from other birds in shell, fresh, n.e.c.",
-    "Hen eggs in shell, fresh",
-    "Milk, Total",
-    "Raw milk of buffalo",
-    "Raw milk of camel",
-    "Raw milk of cattle",
-    "Raw milk of goats",
-    "Raw milk of sheep",
-    "Raw hides and skins of buffaloes",
-    "Raw hides and skins of cattle",
-    "Raw hides and skins of goats or kids",
-    "Raw hides and skins of sheep or lambs",
-    "Cereals, primary",
-    "Citrus Fruit, Total",
-    "Fruit Primary",
-    "Pulses, Total",
-    "Roots and Tubers, Total",
-    "Sugar Crops Primary",
-    "Treenuts, Total",
-    "Vegetables Primary",
-    "Oilcrops, Cake Equivalent",
-    "Oilcrops, Oil Equivalent",
-    "Fibre Crops, Fibre Equivalent"
-]
-
-available_crops = sorted(
-    crop for crop in crop_yield_only["Item"].unique()
-    if crop not in exclude_crops
-)
-
-if "analysis_ran" not in st.session_state:
-    st.session_state.analysis_ran = False
-    
-with st.form("crop_selection_form"):
-
-    crop = st.selectbox(
-        "Primary Crop",
-        available_crops,
-        key="crop"
-    )
-    
-    crop2_options = [
-        c for c in available_crops
-        if c != crop
-    ]
-    
-    crop2 = st.selectbox(
-        "Comparison Crop (Optional)",
-        ["None"] + crop2_options,
-        key="crop2"
-    )
-    
-    if crop2 == "None":
-        crop2 = None
-
-    submit_crops = st.form_submit_button(
-        "🚀 Run Analysis",
-        use_container_width=True
-    )
-
-if submit_crops:
-    st.session_state.analysis_ran = True
-
-if not st.session_state.analysis_ran:
-    st.stop()
-
-df_crop_main = build_crop_df(crop)
-df_crop_second = build_crop_df(crop2) if crop2 else None
-
-if df_crop_main is None:
-    st.error(
-        f"❌ {crop} does not have enough clean fertilizer and yield data for analysis."
-    )
-    st.stop()
-
-if crop2 and df_crop_second is None:
-    st.warning(
-        f"⚠️ {crop2} does not have enough clean fertilizer and yield data for comparison."
-    )
     
 st.subheader("Load Crop Yield Dataset")
 
