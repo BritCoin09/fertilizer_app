@@ -1032,6 +1032,9 @@ available_crops = sorted(
     crop for crop in crop_yield_only["Item"].unique()
     if crop not in exclude_crops
 )
+
+if "analysis_ran" not in st.session_state:
+    st.session_state.analysis_ran = False
     
 with st.form("crop_selection_form"):
 
@@ -1060,7 +1063,10 @@ with st.form("crop_selection_form"):
         use_container_width=True
     )
 
-if not submit_crops:
+if submit_crops:
+    st.session_state.analysis_ran = True
+
+if not st.session_state.analysis_ran:
     st.stop()
 
 df_crop_main = build_crop_df(crop)
