@@ -302,36 +302,6 @@ if uploaded_project is not None:
         "✅ Project loaded successfully!"
     )
 
-
-reset_theme = st.sidebar.button(
-    "🔄 Reset Theme"
-)
-
-if reset_theme:
-
-    st.session_state.crop1_color = "#4A7C59"
-    st.session_state.crop1_background = "#DDEEE3"
-
-    st.session_state.crop2_color = "#B58A4A"
-    st.session_state.crop2_background = "#F5F1E6"
-
-    st.rerun()
-
-# New Project
-
-new_project = st.sidebar.button(
-    "🗑️ New Project"
-)
-
-if new_project:
-
-    keys_to_remove = list(st.session_state.keys())
-
-    for key in keys_to_remove:
-        del st.session_state[key]
-
-    st.rerun()
-
 st.sidebar.subheader("🎨 Chart Colors")
 
 with st.sidebar.form("style_form"):
@@ -393,6 +363,35 @@ crop2_background = st.session_state.get(
 
 crop1_emoji = "🌾"
 crop2_emoji = "🌱"
+
+reset_theme = st.sidebar.button(
+    "🔄 Reset Theme"
+)
+
+if reset_theme:
+
+    st.session_state.crop1_color = "#4A7C59"
+    st.session_state.crop1_background = "#DDEEE3"
+
+    st.session_state.crop2_color = "#B58A4A"
+    st.session_state.crop2_background = "#F5F1E6"
+
+    st.rerun()
+
+# New Project
+
+new_project = st.sidebar.button(
+    "🗑️ New Project"
+)
+
+if new_project:
+
+    keys_to_remove = list(st.session_state.keys())
+
+    for key in keys_to_remove:
+        del st.session_state[key]
+
+    st.rerun()
     
 # -----------------------------
 # Load data
