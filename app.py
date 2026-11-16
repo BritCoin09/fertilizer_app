@@ -299,23 +299,6 @@ crop2_emoji = "🌱"
 st.sidebar.markdown("---")
 st.sidebar.subheader("💾 Project Management")
 
-project_data = {
-    "crop": st.session_state.get("crop"),
-    "crop2": st.session_state.get("crop2"),
-
-    "crop1_color": st.session_state.get("crop1_color"),
-    "crop1_background": st.session_state.get("crop1_background"),
-
-    "crop2_color": st.session_state.get("crop2_color"),
-    "crop2_background": st.session_state.get("crop2_background"),
-
-    "problem_impact": st.session_state.get("problem_impact"),
-    "eda_intro": st.session_state.get("eda_intro"),
-    "future_work": st.session_state.get("future_work"),
-    "project_questions": st.session_state.get("project_questions"),
-    "final_project_conclusion": st.session_state.get("final_project_conclusion")
-}
-
 project_data = {}
 
 for key, value in st.session_state.items():
@@ -352,6 +335,36 @@ if uploaded_project is not None:
     )
 
     st.rerun()
+
+reset_theme = st.sidebar.button(
+    "🔄 Reset Theme"
+)
+
+if reset_theme:
+
+    st.session_state.crop1_color = "#4A7C59"
+    st.session_state.crop1_background = "#DDEEE3"
+
+    st.session_state.crop2_color = "#B58A4A"
+    st.session_state.crop2_background = "#F5F1E6"
+
+    st.rerun()
+
+# New Project
+
+new_project = st.sidebar.button(
+    "🗑️ New Project"
+)
+
+if new_project:
+
+    keys_to_remove = list(st.session_state.keys())
+
+    for key in keys_to_remove:
+        del st.session_state[key]
+
+    st.rerun()
+    
 # -----------------------------
 # Load data
 # -----------------------------
