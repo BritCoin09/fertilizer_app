@@ -271,10 +271,6 @@ with st.sidebar:
         value="🌱"
     )
 
-    apply_style = st.form_submit_button(
-        "🎨 Apply Style"
-    )
-
 fert_background = "#4A7C59"
 # -----------------------------
 # Load data
