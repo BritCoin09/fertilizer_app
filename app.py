@@ -234,67 +234,7 @@ if st.session_state.get("crop2"):
     st.sidebar.success(f"Crop 2: {st.session_state.crop2}")
 
 
-st.sidebar.subheader("🎨 Chart Colors")
 
-with st.sidebar.form("style_form"):
-
-    new_crop1_color = st.color_picker(
-        "Crop 1 Color",
-        st.session_state.get("crop1_color", "#4A7C59")
-    )
-
-    new_crop1_background = st.color_picker(
-        "Crop 1 Background",
-        st.session_state.get("crop1_background", "#DDEEE3")
-    )
-
-    if st.session_state.get("crop2"):
-
-        new_crop2_color = st.color_picker(
-            "Crop 2 Color",
-            st.session_state.get("crop2_color", "#B58A4A")
-        )
-
-        new_crop2_background = st.color_picker(
-            "Crop 2 Background",
-            st.session_state.get("crop2_background", "#F5F1E6")
-        )
-
-    update_theme = st.form_submit_button(
-        "✨ Update Theme"
-    )
-
-if update_theme:
-
-    st.session_state.crop1_color = new_crop1_color
-    st.session_state.crop1_background = new_crop1_background
-
-    if st.session_state.get("crop2"):
-        st.session_state.crop2_color = new_crop2_color
-        st.session_state.crop2_background = new_crop2_background
-
-crop1_color = st.session_state.get(
-    "crop1_color",
-    "#4A7C59"
-)
-
-crop1_background = st.session_state.get(
-    "crop1_background",
-    "#DDEEE3"
-)
-
-crop2_color = st.session_state.get(
-    "crop2_color",
-    "#B58A4A"
-)
-
-crop2_background = st.session_state.get(
-    "crop2_background",
-    "#F5F1E6"
-)
-
-crop1_emoji = "🌾"
-crop2_emoji = "🌱"
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("💾 Project Management")
@@ -391,6 +331,68 @@ if new_project:
         del st.session_state[key]
 
     st.rerun()
+
+st.sidebar.subheader("🎨 Chart Colors")
+
+with st.sidebar.form("style_form"):
+
+    new_crop1_color = st.color_picker(
+        "Crop 1 Color",
+        st.session_state.get("crop1_color", "#4A7C59")
+    )
+
+    new_crop1_background = st.color_picker(
+        "Crop 1 Background",
+        st.session_state.get("crop1_background", "#DDEEE3")
+    )
+
+    if st.session_state.get("crop2"):
+
+        new_crop2_color = st.color_picker(
+            "Crop 2 Color",
+            st.session_state.get("crop2_color", "#B58A4A")
+        )
+
+        new_crop2_background = st.color_picker(
+            "Crop 2 Background",
+            st.session_state.get("crop2_background", "#F5F1E6")
+        )
+
+    update_theme = st.form_submit_button(
+        "✨ Update Theme"
+    )
+
+if update_theme:
+
+    st.session_state.crop1_color = new_crop1_color
+    st.session_state.crop1_background = new_crop1_background
+
+    if st.session_state.get("crop2"):
+        st.session_state.crop2_color = new_crop2_color
+        st.session_state.crop2_background = new_crop2_background
+
+crop1_color = st.session_state.get(
+    "crop1_color",
+    "#4A7C59"
+)
+
+crop1_background = st.session_state.get(
+    "crop1_background",
+    "#DDEEE3"
+)
+
+crop2_color = st.session_state.get(
+    "crop2_color",
+    "#B58A4A"
+)
+
+crop2_background = st.session_state.get(
+    "crop2_background",
+    "#F5F1E6"
+)
+
+crop1_emoji = "🌾"
+crop2_emoji = "🌱"
     
 # -----------------------------
 # Load data
