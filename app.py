@@ -233,7 +233,7 @@ if st.session_state.get("crop2"):
 st.sidebar.markdown("---")
 st.sidebar.subheader("🎨 Chart Colors")
 
-with st.sidebar.form("style_form"):
+with st.sidebar:
 
     crop1_color = st.color_picker(
         "Crop 1 Color",
