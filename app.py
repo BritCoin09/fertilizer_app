@@ -389,7 +389,12 @@ new_project = st.sidebar.button(
 
 if new_project:
 
-    st.session_state.clear()
+    keys_to_remove = list(st.session_state.keys())
+
+    for key in keys_to_remove:
+        del st.session_state[key]
+
+    st.session_state.project_loaded = False
 
     st.rerun()
     
