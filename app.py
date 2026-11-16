@@ -316,6 +316,16 @@ project_data = {
     "final_project_conclusion": st.session_state.get("final_project_conclusion")
 }
 
+project_data = {}
+
+for key, value in st.session_state.items():
+
+    try:
+        json.dumps(value)
+        project_data[key] = value
+
+    except TypeError:
+        pass
 
 st.sidebar.download_button(
     "💾 Save Project",
@@ -323,6 +333,25 @@ st.sidebar.download_button(
     file_name="fertilizer_project.json",
     mime="application/json"
 )
+
+uploaded_project = st.sidebar.file_uploader(
+    "📂 Load Project",
+    type=["json"]
+)
+if uploaded_project is not None:
+
+    loaded_data = json.load(uploaded_project)
+
+    for key, value in loaded_data.items():
+        st.session_state[key] = value
+
+    st.session_state.analysis_ran = True
+
+    st.sidebar.success(
+        "✅ Project loaded successfully!"
+    )
+
+    st.rerun()
 # -----------------------------
 # Load data
 # -----------------------------
