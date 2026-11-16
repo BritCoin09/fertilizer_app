@@ -219,8 +219,7 @@ if _client and chat_query:
             temperature=0,
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
-st.sidebar.write("Session crop:", st.session_state.get("crop"))
-st.sidebar.write("Session crop2:", st.session_state.get("crop2"))        
+        
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌾 Selected Crops")
 
