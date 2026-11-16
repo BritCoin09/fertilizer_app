@@ -362,8 +362,6 @@ if uploaded_project is not None:
         "✅ Project loaded successfully!"
     )
 
-    st.rerun()
-
 
 reset_theme = st.sidebar.button(
     "🔄 Reset Theme"
