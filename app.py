@@ -272,13 +272,17 @@ st.sidebar.download_button(
 )
 
 uploaded_project = st.sidebar.file_uploader(
-    "📂 Load Project",
+    "📂 Choose Project File",
     type=["json"]
+)
+
+open_project = st.sidebar.button(
+    "📂 Open Project"
 )
 
 if (
     uploaded_project is not None
-    and not st.session_state.project_loaded
+    and open_project
 ):
 
     loaded_data = json.load(uploaded_project)
@@ -296,7 +300,11 @@ if (
         ):
             continue
 
-        st.session_state[key] = value
+        try:
+            st.session_state[key] = value
+
+        except Exception:
+            pass
 
     st.session_state.analysis_ran = True
     st.session_state.project_loaded = True
@@ -304,6 +312,8 @@ if (
     st.sidebar.success(
         "✅ Project loaded successfully!"
     )
+
+    st.rerun()
 
 st.sidebar.subheader("🎨 Chart Colors")
 
@@ -378,6 +388,8 @@ if reset_theme:
 
     st.session_state.crop2_color = "#B58A4A"
     st.session_state.crop2_background = "#F5F1E6"
+
+    st.session_state.project_loaded = False
 
     st.rerun()
 
