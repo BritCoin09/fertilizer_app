@@ -303,6 +303,12 @@ project_data = {}
 
 for key, value in st.session_state.items():
 
+    if (
+        key.startswith("FormSubmitter")
+        or key.startswith("_")
+    ):
+        continue
+
     try:
         json.dumps(value)
         project_data[key] = value
@@ -326,7 +332,12 @@ if uploaded_project is not None:
     loaded_data = json.load(uploaded_project)
 
     for key, value in loaded_data.items():
+
+        if key.startswith("FormSubmitter"):
+            continue
+    
         st.session_state[key] = value
+
 
     st.session_state.analysis_ran = True
 
