@@ -235,39 +235,31 @@ st.sidebar.subheader("🎨 Chart Colors")
 
 with st.sidebar.form("style_form"):
 
-    crop1_color = st.color_picker(
+    new_crop1_color = st.color_picker(
         "Crop 1 Color",
-        "#4A7C59"
+        st.session_state.get("crop1_color", "#4A7C59")
     )
 
-    crop1_background = st.color_picker(
+    new_crop1_background = st.color_picker(
         "Crop 1 Background",
-        "#DDEEE3"
+        st.session_state.get("crop1_background", "#DDEEE3")
     )
 
     if st.session_state.get("crop2"):
 
-        crop2_color = st.color_picker(
+        new_crop2_color = st.color_picker(
             "Crop 2 Color",
-            "#B58A4A"
+            st.session_state.get("crop2_color", "#B58A4A")
         )
 
-        crop2_background = st.color_picker(
+        new_crop2_background = st.color_picker(
             "Crop 2 Background",
-            "#F5F1E6"
+            st.session_state.get("crop2_background", "#F5F1E6")
         )
 
-    crop1_emoji = st.text_input(
-        "Crop 1 Emoji",
-        value="🌾"
+    update_theme = st.form_submit_button(
+        "✨ Update Theme"
     )
-
-    crop2_emoji = st.text_input(
-        "Crop 2 Emoji",
-        value="🌱"
-    )
-
-    st.form_submit_button("✨ Update Theme")
 
 if update_theme:
 
@@ -277,6 +269,7 @@ if update_theme:
     if st.session_state.get("crop2"):
         st.session_state.crop2_color = new_crop2_color
         st.session_state.crop2_background = new_crop2_background
+
 
 # -----------------------------
 # Load data
