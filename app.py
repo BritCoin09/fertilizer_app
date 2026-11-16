@@ -14,6 +14,8 @@ import kagglehub
 import faiss
 from openai import OpenAI
 
+import json
+
 # -----------------------------
 # Global styling
 # -----------------------------
@@ -86,9 +88,12 @@ MAX_TEMPLATE_CHARS = 50000
 
 ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
 
-# -----------------------------
+# -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
-# -----------------------------
+# -------------------------------------------
+st.sidebar.markdown("---")
+st.sidebar.subheader("💾 Project Management")
+
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
 
@@ -292,6 +297,44 @@ crop2_background = st.session_state.get(
 
 crop1_emoji = "🌾"
 crop2_emoji = "🌱"
+
+project_data = {
+    "crop": crop,
+    "crop2": crop2,
+
+    "crop1_color": crop1_color,
+    "crop1_background": crop1_background,
+
+    "crop2_color": crop2_color,
+    "crop2_background": crop2_background,
+
+    "problem_impact": st.session_state.get(
+        "problem_impact",
+        ""
+    ),
+
+    "project_questions": st.session_state.get(
+        "project_questions",
+        ""
+    ),
+
+    "future_work": st.session_state.get(
+        "future_work",
+        ""
+    ),
+
+    "final_project_conclusion": st.session_state.get(
+        "final_project_conclusion",
+        ""
+    )
+}
+
+st.sidebar.download_button(
+    "💾 Save Project",
+    data=json.dumps(project_data, indent=4),
+    file_name="fertilizer_project.json",
+    mime="application/json"
+)
 # -----------------------------
 # Load data
 # -----------------------------
