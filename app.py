@@ -80,14 +80,6 @@ def load_repo_files():
 
     return docs
 
-REPO_FILES = load_repo_files()
-
-ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
-
-MAX_TEMPLATE_CHARS = 50000
-
-ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
-
 # -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
 # -------------------------------------------
@@ -105,6 +97,25 @@ if api_key:
         st.sidebar.error("Invalid API key.")
         _client = None
 
+REPO_FILES = []
+ALL_REPO_TEXT = ""
+
+if _client:
+    REPO_FILES = load_repo_files()
+
+    ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
+
+    MAX_TEMPLATE_CHARS = 50000
+
+    ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
+
+RAG_DOCS = []
+
+if _client:
+    for doc in REPO_FILES:
+        RAG_DOCS.extend(
+            chunk_text(doc, max_chars=3000)
+        )
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
 # -----------------------------
@@ -116,13 +127,6 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
     text = text or ""
     text = text[:30000]  # hard cap the entire template to avoid huge inputs
     return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
-
-RAG_DOCS = []
-
-for doc in REPO_FILES:
-    RAG_DOCS.extend(
-        chunk_text(doc, max_chars=3000)
-    )
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
@@ -160,12 +164,17 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
 faiss_index = None
 faiss_texts = None
-    
+
 if _client:
-    faiss_index, faiss_texts = build_faiss_index(
-        RAG_DOCS,
-        _client
-    )
+    try:
+        faiss_index, faiss_texts = build_faiss_index(
+            RAG_DOCS,
+            _client
+        )
+    except Exception as e:
+        st.sidebar.warning(
+            f"Chatbot unavailable: {e}"
+        )
 
 # -----------------------------
 # Chatbot (RAG)
