@@ -330,27 +330,23 @@ with st.sidebar.form("style_form"):
 
     new_crop1_color = st.color_picker(
         "Crop 1 Color",
-        st.session_state.get("crop1_color", "#4A7C59"),
-        key="crop1_color_picker"
+        st.session_state.get("crop1_color", "#4A7C59")
     )
     
     new_crop1_background = st.color_picker(
         "Crop 1 Background",
-        st.session_state.get("crop1_background", "#DDEEE3"),
-        key="crop1_background_picker"
+        st.session_state.get("crop1_background", "#DDEEE3")
     )
     if st.session_state.get("crop2"):
 
         new_crop2_color = st.color_picker(
         "Crop 2 Color",
-        st.session_state.get("crop2_color", "#B58A4A"),
-        key="crop2_color_picker"
+        st.session_state.get("crop2_color", "#B58A4A")
     )
     
     new_crop2_background = st.color_picker(
         "Crop 2 Background",
-        st.session_state.get("crop2_background", "#F5F1E6"),
-        key="crop2_background_picker"
+        st.session_state.get("crop2_background", "#F5F1E6")
     )
 
     update_theme = st.form_submit_button(
@@ -400,14 +396,6 @@ if reset_theme:
 
     st.session_state.crop2_color = "#B58A4A"
     st.session_state.crop2_background = "#F5F1E6"
-
-    for key in [
-        "crop1_color_picker",
-        "crop1_background_picker",
-        "crop2_color_picker",
-        "crop2_background_picker"
-    ]:
-        st.session_state.pop(key, None)
 
     st.rerun()
 
