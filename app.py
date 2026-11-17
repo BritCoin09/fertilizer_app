@@ -398,16 +398,16 @@ if reset_theme:
     st.session_state.crop1_color = "#4A7C59"
     st.session_state.crop1_background = "#DDEEE3"
 
-    st.session_state.crop1_color_picker = "#4A7C59"
-    st.session_state.crop1_background_picker = "#DDEEE3"
-
     st.session_state.crop2_color = "#B58A4A"
     st.session_state.crop2_background = "#F5F1E6"
 
-    st.session_state.crop2_color_picker = "#B58A4A"
-    st.session_state.crop2_background_picker = "#F5F1E6"
-
-    st.session_state.project_loaded = False
+    for key in [
+        "crop1_color_picker",
+        "crop1_background_picker",
+        "crop2_color_picker",
+        "crop2_background_picker"
+    ]:
+        st.session_state.pop(key, None)
 
     st.rerun()
 
