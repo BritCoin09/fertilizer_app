@@ -2962,19 +2962,28 @@ if crop2 and df_crop_second is not None:
     coef_11 = model2.coef_[0]
     coef_12 = model2.coef_[1]
     
+    fert_min1 = df_crop_main["Value_fert"].min()
+    fert_max1 = df_crop_main["Value_fert"].max()
+    
     if abs(coef_12) < 1e-10:
-       x_opt = None
-       y_opt = None
+        x_opt = None
+        y_opt = None
+    
     else:
-       x_opt = -coef_11 / (2 * coef_12)
+        x_opt = -coef_11 / (2 * coef_12)
     
-       x_opt_df = pd.DataFrame(
-           {"Value_fert": [x_opt]}
-       )
+        if x_opt < fert_min1 or x_opt > fert_max1:
+            x_opt = None
+            y_opt = None
     
-       y_opt = model2.predict(
-           poly.transform(x_opt_df)
-       )[0]
+        else:
+            x_opt_df = pd.DataFrame(
+                {"Value_fert": [x_opt]}
+            )
+    
+            y_opt = model2.predict(
+                poly.transform(x_opt_df)
+            )[0]
     
     # -----------------------------
     # Crop 2 curve
@@ -2995,19 +3004,28 @@ if crop2 and df_crop_second is not None:
     coef_21 = model2_2.coef_[0]
     coef_22 = model2_2.coef_[1]
     
+    fert_min2 = df_crop_second["Value_fert"].min()
+    fert_max2 = df_crop_second["Value_fert"].max()
+    
     if abs(coef_22) < 1e-10:
         x_opt_2 = None
         y_opt_2 = None
+    
     else:
         x_opt_2 = -coef_21 / (2 * coef_22)
     
-        x_opt_df_2 = pd.DataFrame(
-            {"Value_fert": [x_opt_2]}
-        )
+        if x_opt_2 < fert_min2 or x_opt_2 > fert_max2:
+            x_opt_2 = None
+            y_opt_2 = None
     
-        y_opt_2 = model2_2.predict(
-            poly2.transform(x_opt_df_2)
-        )[0]
+        else:
+            x_opt_df_2 = pd.DataFrame(
+                {"Value_fert": [x_opt_2]}
+            )
+    
+            y_opt_2 = model2_2.predict(
+                poly2.transform(x_opt_df_2)
+            )[0]
     
     # -----------------------------
     # Plot
