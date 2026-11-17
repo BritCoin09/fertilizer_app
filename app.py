@@ -323,7 +323,19 @@ if (
     )
 
     st.rerun()
+    
+if "crop1_color" not in st.session_state:
+    st.session_state.crop1_color = "#4A7C59"
 
+if "crop1_background" not in st.session_state:
+    st.session_state.crop1_background = "#DDEEE3"
+
+if "crop2_color" not in st.session_state:
+    st.session_state.crop2_color = "#B58A4A"
+
+if "crop2_background" not in st.session_state:
+    st.session_state.crop2_background = "#F5F1E6"
+    
 st.sidebar.subheader("🎨 Chart Colors")
 
 with st.sidebar.form("style_form"):
@@ -337,17 +349,18 @@ with st.sidebar.form("style_form"):
         "Crop 1 Background",
         st.session_state.get("crop1_background", "#DDEEE3")
     )
+    
     if st.session_state.get("crop2"):
 
         new_crop2_color = st.color_picker(
-        "Crop 2 Color",
-        st.session_state.get("crop2_color", "#B58A4A")
-    )
-    
-    new_crop2_background = st.color_picker(
-        "Crop 2 Background",
-        st.session_state.get("crop2_background", "#F5F1E6")
-    )
+            "Crop 2 Color",
+            st.session_state.get("crop2_color", "#B58A4A")
+        )
+        
+        new_crop2_background = st.color_picker(
+            "Crop 2 Background",
+            st.session_state.get("crop2_background", "#F5F1E6")
+        )
 
     update_theme = st.form_submit_button(
         "✨ Update Theme"
