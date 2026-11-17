@@ -31,6 +31,7 @@ fert_background = "#4A7C59"
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
+@st.cache_data
 def load_repo_files():
     docs = []
 
