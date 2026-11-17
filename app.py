@@ -336,9 +336,12 @@ if "crop2_color" not in st.session_state:
 if "crop2_background" not in st.session_state:
     st.session_state.crop2_background = "#F5F1E6"
     
+if "style_form_version" not in st.session_state:
+    st.session_state.style_form_version = 0
+     
 st.sidebar.subheader("🎨 Chart Colors")
 
-with st.sidebar.form("style_form"):
+with st.sidebar.form(f"style_form_{st.session_state.style_form_version}"):
 
     new_crop1_color = st.color_picker(
         "Crop 1 Color",
@@ -409,6 +412,11 @@ if reset_theme:
 
     st.session_state.crop2_color = "#B58A4A"
     st.session_state.crop2_background = "#F5F1E6"
+
+    # force a brand-new form
+    st.session_state.style_form_version = (
+        st.session_state.get("style_form_version", 0) + 1
+    )
 
     st.rerun()
 
