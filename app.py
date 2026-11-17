@@ -128,7 +128,6 @@ if _client:
 # RAG setup — SAFE & SIMPLE
 # -----------------------------
 
-@st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
 
     if _client is None or not docs:
