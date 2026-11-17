@@ -80,6 +80,14 @@ def load_repo_files():
 
     return docs
 
+def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
+    """
+    Hard-split the template into fixed-size character chunks.
+    No overlap, no sliding window, no surprises.
+    """
+    text = text or ""
+    text = text[:30000]  # hard cap the entire template to avoid huge inputs
+    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 # -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
 # -------------------------------------------
@@ -119,14 +127,6 @@ if _client:
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
 # -----------------------------
-def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
-    """
-    Hard-split the template into fixed-size character chunks.
-    No overlap, no sliding window, no surprises.
-    """
-    text = text or ""
-    text = text[:30000]  # hard cap the entire template to avoid huge inputs
-    return [text[i:i + max_chars] for i in range(0, len(text), max_chars)]
 
 @st.cache_resource
 def build_faiss_index(docs: list[str], _client: OpenAI):
