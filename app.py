@@ -317,6 +317,9 @@ if (
 
     st.session_state.analysis_ran = True
     st.session_state.project_loaded = True
+    st.session_state.style_form_version = (
+    st.session_state.get("style_form_version", 0) + 1
+    )
 
     st.sidebar.success(
         "✅ Project loaded successfully!"
