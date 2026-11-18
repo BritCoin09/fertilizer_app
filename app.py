@@ -28,6 +28,21 @@ st.set_page_config(
     layout="wide"
 )
 fert_background = "#4A7C59"
+
+DEFAULT_STATE = {
+    "project_loaded": False,
+    "analysis_ran": False,
+    "style_form_version": 0,
+    "crop1_color": "#4A7C59",
+    "crop1_background": "#DDEEE3",
+    "crop2_color": "#B58A4A",
+    "crop2_background": "#F5F1E6",
+}
+
+for key, value in DEFAULT_STATE.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+        
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -151,7 +166,10 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
     except Exception as e:
         st.error(f"Embedding Error: {e}")
         return None, None
-
+        
+if not all_vectors:
+    return None, None
+    
     vectors = np.array(all_vectors, dtype="float32")
 
     dim = vectors.shape[1]
@@ -165,16 +183,20 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 faiss_index = None
 faiss_texts = None
 
-if _client:
+if _client and RAG_DOCS:
     try:
         faiss_index, faiss_texts = build_faiss_index(
             RAG_DOCS,
             _client
         )
+
     except Exception as e:
         st.sidebar.warning(
             f"Chatbot unavailable: {e}"
         )
+
+        faiss_index = None
+        faiss_texts = None
 
 # -----------------------------
 # Chatbot (RAG)
@@ -185,25 +207,34 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 
 if _client and chat_query:
-    if faiss_index is None:
+    if (
+        faiss_index is None
+        or faiss_texts is None
+    ):
+
         st.sidebar.error("RAG index unavailable.")
     else:
+        try:
         # embed the (short) user query
-        q_text = chat_query.strip()[:500]
-        q_emb = _client.embeddings.create(
-            model="text-embedding-3-small",
-            input=[q_text]
-        ).data[0].embedding
-
-        q_vec = np.array([q_emb], dtype="float32")
-        D, I = faiss_index.search(q_vec, k=5)
-
-        # build a compact context from the top chunks
-        retrieved_chunks = [faiss_texts[i] for i in I[0]]
-        context = "\n\n---\n\n".join(retrieved_chunks)
-        context = context[:6000]  # final safety cap
-
-        resp = _client.chat.completions.create(
+            q_text = chat_query.strip()[:500]
+            q_emb = _client.embeddings.create(
+                model="text-embedding-3-small",
+                input=[q_text]
+            ).data[0].embedding
+    
+            q_vec = np.array([q_emb], dtype="float32")
+            D, I = faiss_index.search(q_vec, k=5)
+    
+            # build a compact context from the top chunks
+            retrieved_chunks = [
+                faiss_texts[i]
+                for i in I[0]
+                if i >= 0 and i < len(faiss_texts)
+            ]
+            context = "\n\n---\n\n".join(retrieved_chunks)
+            context = context[:6000]  # final safety cap
+    
+            resp = _client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -232,6 +263,10 @@ if _client and chat_query:
             temperature=0,
         )
         st.sidebar.write(resp.choices[0].message.content.strip())
+                except Exception as e:
+            st.sidebar.warning(
+                f"Assistant unavailable: {e}"
+            )
         
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌾 Selected Crops")
@@ -294,8 +329,11 @@ if (
     and open_project
 ):
 
+    try:
     loaded_data = json.load(uploaded_project)
-
+except Exception:
+    st.sidebar.error("Invalid project file.")
+    loaded_data = {}
     excluded_keys = {
         "chat_input"
     }
@@ -326,21 +364,6 @@ if (
     )
 
     st.rerun()
-    
-if "crop1_color" not in st.session_state:
-    st.session_state.crop1_color = "#4A7C59"
-
-if "crop1_background" not in st.session_state:
-    st.session_state.crop1_background = "#DDEEE3"
-
-if "crop2_color" not in st.session_state:
-    st.session_state.crop2_color = "#B58A4A"
-
-if "crop2_background" not in st.session_state:
-    st.session_state.crop2_background = "#F5F1E6"
-    
-if "style_form_version" not in st.session_state:
-    st.session_state.style_form_version = 0
      
 st.sidebar.subheader("🎨 Chart Colors")
 
@@ -358,20 +381,23 @@ with st.sidebar.form(f"style_form_{st.session_state.style_form_version}"):
     
     if st.session_state.get("crop2"):
 
-        new_crop2_color = st.color_picker(
-            "Crop 2 Color",
-            st.session_state.get("crop2_color", "#B58A4A")
-        )
+        new_crop2_color = st.session_state.crop2_color
+        new_crop2_background = st.session_state.crop2_background
         
-        new_crop2_background = st.color_picker(
-            "Crop 2 Background",
-            st.session_state.get("crop2_background", "#F5F1E6")
+        if st.session_state.get("crop2"):
+            new_crop2_color = st.color_picker(
+                "Crop 2 Color",
+                st.session_state.get("crop2_color", "#B58A4A")
+            )
+        
+            new_crop2_background = st.color_picker(
+                "Crop 2 Background",
+                st.session_state.get("crop2_background", "#F5F1E6")
+            )
+        
+        update_theme = st.form_submit_button(
+            "✨ Update Theme"
         )
-
-    update_theme = st.form_submit_button(
-        "✨ Update Theme"
-    )
-
 if update_theme:
 
     st.session_state.crop1_color = new_crop1_color
@@ -434,11 +460,14 @@ if new_project:
     for key in list(st.session_state.keys()):
         del st.session_state[key]
 
-    st.session_state.analysis_ran = False
     st.session_state.project_loaded = False
-
-    st.cache_data.clear()
-    st.cache_resource.clear()
+    st.session_state.analysis_ran = False
+    st.session_state.style_form_version = 0
+    
+    st.session_state.crop1_color = "#4A7C59"
+    st.session_state.crop1_background = "#DDEEE3"
+    st.session_state.crop2_color = "#B58A4A"
+    st.session_state.crop2_background = "#F5F1E6"
 
     st.rerun()
     
