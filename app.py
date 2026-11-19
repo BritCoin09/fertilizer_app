@@ -122,6 +122,8 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
+        
+start = time.time()
 
 REPO_FILES = []
 ALL_REPO_TEXT = ""
