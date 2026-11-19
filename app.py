@@ -45,7 +45,10 @@ def ensure_state():
         st.session_state.setdefault(key, value)
 
 ensure_state()
-       
+
+start_app = time.time()
+
+st.sidebar.write("🔥 APP STARTED")
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -452,6 +455,11 @@ if new_project:
     st.cache_data.clear()
 
     st.rerun()
+
+st.sidebar.write(
+    f"⏱ Total app rerun: {time.time() - start_app:.2f}s"
+)
+
 # -----------------------------
 # Load data
 # -----------------------------
