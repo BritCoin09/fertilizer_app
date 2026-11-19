@@ -131,23 +131,7 @@ start = time.time()
 
 REPO_FILES = []
 ALL_REPO_TEXT = ""
-
-if _client:
-    REPO_FILES = load_repo_files()
-
-    ALL_REPO_TEXT = "\n\n".join(REPO_FILES)
-
-    MAX_TEMPLATE_CHARS = 50000
-
-    ALL_REPO_TEXT = ALL_REPO_TEXT[:MAX_TEMPLATE_CHARS]
-
 RAG_DOCS = []
-
-if _client:
-    for doc in REPO_FILES:
-        RAG_DOCS.extend(
-            chunk_text(doc, max_chars=3000)
-        )
 
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
@@ -218,12 +202,29 @@ st.sidebar.subheader("🤖 Fertilizer Assistant")
 chat_query = st.sidebar.text_input("Ask a question:", key="chat_input")
 
 if _client and chat_query:
+
+    REPO_FILES = load_repo_files()
+
+    RAG_DOCS = []
+
+    for doc in REPO_FILES:
+        RAG_DOCS.extend(
+            chunk_text(doc, max_chars=3000)
+        )
+
+    faiss_index, faiss_texts = build_faiss_index(
+        RAG_DOCS,
+        _client
+    )
+
     if (
         faiss_index is None
         or faiss_texts is None
     ):
 
-        st.sidebar.error("RAG index unavailable.")
+        st.sidebar.error(
+            "RAG index unavailable."
+        )
     else:
         try:
             # embed the (short) user query
