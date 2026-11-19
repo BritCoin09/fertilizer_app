@@ -218,7 +218,7 @@ if _client and chat_query:
         st.sidebar.error("RAG index unavailable.")
     else:
         try:
-        # embed the (short) user query
+            # embed the (short) user query
             q_text = chat_query.strip()[:500]
             q_emb = _client.embeddings.create(
                 model="text-embedding-3-small",
@@ -265,11 +265,15 @@ if _client and chat_query:
             ],
             temperature=0,
         )
-        st.sidebar.write(resp.choices[0].message.content.strip())
-                except Exception as e:
+
+            st.sidebar.write(
+                resp.choices[0].message.content.strip()
+            )
+
+        except Exception as e:
             st.sidebar.warning(
                 f"Assistant unavailable: {e}"
-            )     
+            ) 
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌾 Selected Crops")
