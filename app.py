@@ -39,10 +39,12 @@ DEFAULT_STATE = {
     "crop2_background": "#F5F1E6",
 }
 
-for key, value in DEFAULT_STATE.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
-        
+def ensure_state():
+    for key, value in DEFAULT_STATE.items():
+        st.session_state.setdefault(key, value)
+
+ensure_state()
+       
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -140,6 +142,7 @@ if _client:
         RAG_DOCS.extend(
             chunk_text(doc, max_chars=3000)
         )
+
 # -----------------------------
 # RAG setup — SAFE & SIMPLE
 # -----------------------------
@@ -167,9 +170,9 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
         st.error(f"Embedding Error: {e}")
         return None, None
         
-if not all_vectors:
-    return None, None
-    
+    if not all_vectors:
+        return None, None
+        
     vectors = np.array(all_vectors, dtype="float32")
 
     dim = vectors.shape[1]
@@ -266,8 +269,8 @@ if _client and chat_query:
                 except Exception as e:
             st.sidebar.warning(
                 f"Assistant unavailable: {e}"
-            )
-        
+            )     
+
 st.sidebar.markdown("---")
 st.sidebar.subheader("🌾 Selected Crops")
 
@@ -282,9 +285,6 @@ if st.session_state.get("crop2"):
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("💾 Project Management")
-
-if "project_loaded" not in st.session_state:
-    st.session_state.project_loaded = False
     
 project_data = {}
 
@@ -324,49 +324,31 @@ open_project = st.sidebar.button(
     "📂 Open Project"
 )
 
-if (
-    uploaded_project is not None
-    and open_project
-):
+if uploaded_project is not None and open_project:
+
+    loaded_data = {}
 
     try:
-    loaded_data = json.load(uploaded_project)
-except Exception:
-    st.sidebar.error("Invalid project file.")
-    loaded_data = {}
-    excluded_keys = {
-        "chat_input"
-    }
+        loaded_data = json.load(uploaded_project)
 
-    for key, value in loaded_data.items():
+        st.session_state.clear()
+        st.session_state.update(DEFAULT_STATE)
 
-        if (
-            key.startswith("FormSubmitter")
-            or key.startswith("_")
-            or key in excluded_keys
-        ):
-            continue
-
-        try:
+        for key, value in loaded_data.items():
             st.session_state[key] = value
+        
+        st.session_state.project_loaded = True
+        st.session_state.analysis_ran = True
+        st.session_state.style_form_version += 1
+        
+        st.rerun()
 
-        except Exception:
-            pass
-
-    st.session_state.analysis_ran = True
-    st.session_state.project_loaded = True
-    st.session_state.style_form_version = (
-    st.session_state.get("style_form_version", 0) + 1
-    )
-
-    st.sidebar.success(
-        "✅ Project loaded successfully!"
-    )
-
-    st.rerun()
-     
+    except Exception:
+        st.sidebar.error("Invalid project file.")
+        
 st.sidebar.subheader("🎨 Chart Colors")
 
+update_theme = False
 with st.sidebar.form(f"style_form_{st.session_state.style_form_version}"):
 
     new_crop1_color = st.color_picker(
@@ -381,23 +363,19 @@ with st.sidebar.form(f"style_form_{st.session_state.style_form_version}"):
     
     if st.session_state.get("crop2"):
 
-        new_crop2_color = st.session_state.crop2_color
-        new_crop2_background = st.session_state.crop2_background
-        
-        if st.session_state.get("crop2"):
-            new_crop2_color = st.color_picker(
-                "Crop 2 Color",
-                st.session_state.get("crop2_color", "#B58A4A")
-            )
-        
-            new_crop2_background = st.color_picker(
-                "Crop 2 Background",
-                st.session_state.get("crop2_background", "#F5F1E6")
-            )
-        
-        update_theme = st.form_submit_button(
-            "✨ Update Theme"
+        new_crop2_color = st.color_picker(
+            "Crop 2 Color",
+            st.session_state.get("crop2_color", "#B58A4A")
         )
+    
+        new_crop2_background = st.color_picker(
+            "Crop 2 Background",
+            st.session_state.get("crop2_background", "#F5F1E6")
+        )
+            
+    update_theme = st.form_submit_button(
+        "✨ Update Theme"
+    )
 if update_theme:
 
     st.session_state.crop1_color = new_crop1_color
@@ -407,6 +385,10 @@ if update_theme:
         st.session_state.crop2_color = new_crop2_color
         st.session_state.crop2_background = new_crop2_background
 
+    st.session_state.style_form_version += 1
+
+    st.rerun()
+    
 crop1_color = st.session_state.get(
     "crop1_color",
     "#4A7C59"
@@ -426,7 +408,6 @@ crop2_background = st.session_state.get(
     "crop2_background",
     "#F5F1E6"
 )
-
 crop1_emoji = "🌾"
 crop2_emoji = "🌱"
 
@@ -448,7 +429,6 @@ if reset_theme:
     )
 
     st.rerun()
-
 # New Project
 
 new_project = st.sidebar.button(
@@ -457,20 +437,12 @@ new_project = st.sidebar.button(
 
 if new_project:
 
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
+    st.session_state.clear()
+    st.session_state.update(DEFAULT_STATE)
 
-    st.session_state.project_loaded = False
-    st.session_state.analysis_ran = False
-    st.session_state.style_form_version = 0
-    
-    st.session_state.crop1_color = "#4A7C59"
-    st.session_state.crop1_background = "#DDEEE3"
-    st.session_state.crop2_color = "#B58A4A"
-    st.session_state.crop2_background = "#F5F1E6"
+    st.cache_data.clear()
 
     st.rerun()
-    
 # -----------------------------
 # Load data
 # -----------------------------
