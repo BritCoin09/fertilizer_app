@@ -15,8 +15,6 @@ import faiss
 from openai import OpenAI
 
 import json
-import time
-
 # -----------------------------
 # Global styling
 # -----------------------------
@@ -46,9 +44,6 @@ def ensure_state():
 
 ensure_state()
 
-start_app = time.time()
-
-st.sidebar.write("🔥 APP STARTED")
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -126,8 +121,6 @@ if api_key:
     except Exception:
         st.sidebar.error("Invalid API key.")
         _client = None
-        
-start = time.time()
 
 REPO_FILES = []
 ALL_REPO_TEXT = ""
@@ -456,10 +449,6 @@ if new_project:
     st.cache_data.clear()
 
     st.rerun()
-
-st.sidebar.write(
-    f"⏱ Total app rerun: {time.time() - start_app:.2f}s"
-)
 
 # -----------------------------
 # Load data
