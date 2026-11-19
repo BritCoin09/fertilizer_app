@@ -186,6 +186,10 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 faiss_index = None
 faiss_texts = None
 
+import time
+
+start = time.time()
+
 if _client and RAG_DOCS:
     try:
         faiss_index, faiss_texts = build_faiss_index(
