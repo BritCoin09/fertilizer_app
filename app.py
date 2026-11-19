@@ -15,6 +15,7 @@ import faiss
 from openai import OpenAI
 
 import json
+import time
 
 # -----------------------------
 # Global styling
@@ -187,8 +188,6 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
 faiss_index = None
 faiss_texts = None
-
-import time
 
 start = time.time()
 
