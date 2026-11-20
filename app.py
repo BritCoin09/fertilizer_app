@@ -517,6 +517,9 @@ RULES:
 - If a crop is unavailable, clearly say it is not supported.
 - If asked what crops are available, provide the crop names.
 """
+st.write(f"Number of crops: {len(available_crops)}")
+st.write(available_crops[:10])
+
 # -----------------------------
 # Prepare fertilizer data
 # -----------------------------
