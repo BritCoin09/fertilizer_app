@@ -169,7 +169,6 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 faiss_index = None
 faiss_texts = None
 
-start = time.time()
 
 if _client and RAG_DOCS:
     try:
@@ -260,6 +259,7 @@ if _client and chat_query:
                         "Models 1 and 2 are included primarily to visualize fertilizer-yield relationships and support the fertilizer optimization recommendation generated in Model 3. "
                         "If model performance metrics are weak, explain that fertilizer alone may not capture the full complexity of crop production and that additional agricultural variables are often needed to improve predictive performance. "
                         "Interpret results as insights into fertilizer response rather than as complete crop-yield prediction systems. "
+                        f"\n\nSupported Crops:\n{', '.join(available_crops)}"
                         f"\n\nRepository Context:\n{context}"
                     ),
                 },
@@ -473,6 +473,41 @@ def load_crop_yield_data():
 fert = load_fertilizer_data()
 df_yield = load_crop_yield_data()
 
+exclude_crops = [
+    "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in crop_yield_only["Item"].unique()
+    if crop not in exclude_crops
+)
+
 # -----------------------------
 # Prepare fertilizer data
 # -----------------------------
@@ -620,36 +655,6 @@ st.info(
 st.subheader(
     f"{crop1_emoji} Select Crop(s) for Analysis {crop2_emoji}"
 )
-
-exclude_crops = [
-    "Eggs Primary",
-    "Other pome fruits",
-    "Jojoba seeds",
-    "Tallowtree seeds",
-    "Eggs from other birds in shell, fresh, n.e.c.",
-    "Hen eggs in shell, fresh",
-    "Milk, Total",
-    "Raw milk of buffalo",
-    "Raw milk of camel",
-    "Raw milk of cattle",
-    "Raw milk of goats",
-    "Raw milk of sheep",
-    "Raw hides and skins of buffaloes",
-    "Raw hides and skins of cattle",
-    "Raw hides and skins of goats or kids",
-    "Raw hides and skins of sheep or lambs",
-    "Cereals, primary",
-    "Citrus Fruit, Total",
-    "Fruit Primary",
-    "Pulses, Total",
-    "Roots and Tubers, Total",
-    "Sugar Crops Primary",
-    "Treenuts, Total",
-    "Vegetables Primary",
-    "Oilcrops, Cake Equivalent",
-    "Oilcrops, Oil Equivalent",
-    "Fibre Crops, Fibre Equivalent"
-]
 
 available_crops = sorted(
     crop for crop in crop_yield_only["Item"].unique()
