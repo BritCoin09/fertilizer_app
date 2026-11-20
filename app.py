@@ -44,6 +44,160 @@ def ensure_state():
 
 ensure_state()
 
+SUPPORTED_CROPS = [
+    "Abaca, manila hemp, raw",
+    "Agave fibres, raw, n.e.c.",
+    "Almonds, in shell",
+    "Anise, badian, coriander, cumin, caraway, fennel and juniper berries, raw",
+    "Apples",
+    "Apricots",
+    "Areca nuts",
+    "Artichokes",
+    "Asparagus",
+    "Avocados",
+    "Bambara beans, dry",
+    "Bananas",
+    "Barley",
+    "Beans, dry",
+    "Blueberries",
+    "Broad beans and horse beans, dry",
+    "Broad beans and horse beans, green",
+    "Buckwheat",
+    "Cabbages",
+    "Canary seed",
+    "Cantaloupes and other melons",
+    "Carrots and turnips",
+    "Cashew nuts, in shell",
+    "Cashewapple",
+    "Cassava, fresh",
+    "Castor oil seeds",
+    "Cauliflowers and broccoli",
+    "Cherries",
+    "Chestnuts, in shell",
+    "Chick peas, dry",
+    "Chicory roots",
+    "Chillies and peppers, dry (Capsicum spp., Pimenta spp.), raw",
+    "Chillies and peppers, green (Capsicum spp. and Pimenta spp.)",
+    "Cinnamon and cinnamon-tree flowers, raw",
+    "Cloves (whole stems), raw",
+    "Cocoa beans",
+    "Coconuts, in shell",
+    "Coffee, green",
+    "Cow peas, dry",
+    "Cranberries",
+    "Cucumbers and gherkins",
+    "Currants",
+    "Dates",
+    "Eggplants (aubergines)",
+    "Figs",
+    "Flax, raw or retted",
+    "Fonio",
+    "Ginger, raw",
+    "Gooseberries",
+    "Grapes",
+    "Green corn (maize)",
+    "Green garlic",
+    "Groundnuts, excluding shelled",
+    "Hazelnuts, in shell",
+    "Hempseed",
+    "Hop cones",
+    "Jute, raw or retted",
+    "Kapok fruit",
+    "Karite nuts (sheanuts)",
+    "Kenaf, and other textile bast fibres, raw or retted",
+    "Kiwi fruit",
+    "Kola nuts",
+    "Leeks and other alliaceous vegetables",
+    "Lemons and limes",
+    "Lentils, dry",
+    "Lettuce and chicory",
+    "Linseed",
+    "Locust beans (carobs)",
+    "Lupins",
+    "Maize (corn)",
+    "Mangoes, guavas and mangosteens",
+    "Maté leaves",
+    "Melonseed",
+    "Millet",
+    "Mustard seed",
+    "Natural rubber in primary forms",
+    "Nutmeg, mace, cardamoms, raw",
+    "Oats",
+    "Oil palm fruit",
+    "Okra",
+    "Olives",
+    "Onions and shallots, dry (excluding dehydrated)",
+    "Onions and shallots, green",
+    "Oranges",
+    "Papayas",
+    "Peaches and nectarines",
+    "Pears",
+    "Peas, dry",
+    "Peas, green",
+    "Pepper (Piper spp.), raw",
+    "Peppermint, spearmint",
+    "Persimmons",
+    "Pigeon peas, dry",
+    "Pineapples",
+    "Pistachios, in shell",
+    "Plantains and cooking bananas",
+    "Plums and sloes",
+    "Pomelos and grapefruits",
+    "Poppy seed",
+    "Potatoes",
+    "Pumpkins, squash and gourds",
+    "Pyrethrum, dried flowers",
+    "Quinces",
+    "Quinoa",
+    "Ramie, raw or retted",
+    "Rape or colza seed",
+    "Raspberries",
+    "Rice",
+    "Rye",
+    "Safflower seed",
+    "Seed cotton, unginned",
+    "Sesame seed",
+    "Sisal, raw",
+    "Sorghum",
+    "Sour cherries",
+    "Soya beans",
+    "Spinach",
+    "Strawberries",
+    "String beans",
+    "Sugar beet",
+    "Sugar cane",
+    "Sunflower seed",
+    "Sweet potatoes",
+    "Tangerines, mandarins, clementines",
+    "Taro",
+    "Tea leaves",
+    "Tomatoes",
+    "Triticale",
+    "True hemp, raw or retted",
+    "Tung nuts",
+    "Unmanufactured tobacco",
+    "Vanilla, raw",
+    "Vetches",
+    "Walnuts, in shell",
+    "Watermelons",
+    "Wheat",
+    "Yams",
+    "Yautia"
+]
+
+crop_context = f"""
+SUPPORTED CROP COUNT:
+{len(SUPPORTED_CROPS)}
+
+SUPPORTED CROPS:
+{", ".join(SUPPORTED_CROPS)}
+
+RULES:
+- Only recommend crops from this list.
+- Never invent crop names.
+- If a crop is unavailable, clearly say it is not supported.
+- If asked what crops are available, provide the crop names.
+"""
 # -----------------------------
 # Load entire repository for RAG
 # -----------------------------
@@ -569,19 +723,6 @@ available_crops = sorted(
     crop for crop in crop_yield_only["Item"].unique()
     if crop not in exclude_crops
 )
-crop_context = f"""
-SUPPORTED CROP COUNT:
-{len(available_crops)}
-
-SUPPORTED CROPS:
-{", ".join(available_crops)}
-
-RULES:
-- Only recommend crops from this list.
-- Never invent crop names.
-- If a crop is unavailable, clearly say it is not supported.
-- If asked what crops are available, provide the crop names.
-"""
 # -----------------------------
 # Build crop datasets
 # -----------------------------
