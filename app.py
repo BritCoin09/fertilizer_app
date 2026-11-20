@@ -184,76 +184,7 @@ if _client and RAG_DOCS:
 
         faiss_index = None
         faiss_texts = None
-# -----------------------------
-# Load data
-# -----------------------------
-@st.cache_data
-def load_fertilizer_data():
-    path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
-    return pd.read_csv(
-        os.path.join(
-            path,
-            "Environment_Fertilizers_E_All_Data_(Normalized)",
-            "Environment_Fertilizers_E_All_Data_(Normalized).csv"
-        ),
-        encoding="latin1"
-    )
 
-@st.cache_data
-def load_crop_yield_data():
-    crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
-    return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
-
-fert = load_fertilizer_data()
-df_yield = load_crop_yield_data()
-
-exclude_crops = [
-    "Eggs Primary",
-    "Other pome fruits",
-    "Jojoba seeds",
-    "Tallowtree seeds",
-    "Eggs from other birds in shell, fresh, n.e.c.",
-    "Hen eggs in shell, fresh",
-    "Milk, Total",
-    "Raw milk of buffalo",
-    "Raw milk of camel",
-    "Raw milk of cattle",
-    "Raw milk of goats",
-    "Raw milk of sheep",
-    "Raw hides and skins of buffaloes",
-    "Raw hides and skins of cattle",
-    "Raw hides and skins of goats or kids",
-    "Raw hides and skins of sheep or lambs",
-    "Cereals, primary",
-    "Citrus Fruit, Total",
-    "Fruit Primary",
-    "Pulses, Total",
-    "Roots and Tubers, Total",
-    "Sugar Crops Primary",
-    "Treenuts, Total",
-    "Vegetables Primary",
-    "Oilcrops, Cake Equivalent",
-    "Oilcrops, Oil Equivalent",
-    "Fibre Crops, Fibre Equivalent"
-]
-
-available_crops = sorted(
-    crop for crop in df_yield["Item"].unique()
-    if crop not in exclude_crops
-)
-crop_context = f"""
-SUPPORTED CROP COUNT:
-{len(available_crops)}
-
-SUPPORTED CROPS:
-{", ".join(available_crops)}
-
-RULES:
-- Only recommend crops from this list.
-- Never invent crop names.
-- If a crop is unavailable, clearly say it is not supported.
-- If asked what crops are available, provide the crop names.
-"""
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
@@ -317,14 +248,14 @@ if _client and chat_query:
                         "Users do not have access to the repository, source code, project files, notebooks, or local files. "
                         "Never tell users to search files, inspect code, open notebooks, view source code, browse the repository, or look through project files. "
                         "If information exists in the repository context, explain it directly to the user in plain language. "
-                        "If a user asks where to find something, direct them to locations within the application itself, such as the sidebar crop selectors, charts, modeling sections, comparison section, conclusions section, or project explanations. "
-                        "If users ask what crops are available, provide the crop names from the Supported Crops section included in this prompt. "
-                        "Only recommend, compare, or discuss crops that appear in the Supported Crops section. "
-                        "Never invent crop names that are not listed in the Supported Crops section. "
-                        "Encourage users to use the crop selection workflow and experiment with different crop names in the sidebar crop selectors. "
-                        "If information is available in a chart, section, table, text area, or visualization within the application, direct users there instead of referring to repository contents. "
+                        "Use the Supported Crops list provided in this prompt as the authoritative list of supported crops. "
+                        "If a user asks how many crops are supported, what crops are available, or whether a specific crop is supported, answer directly using the Supported Crop Count and Supported Crops list provided in this prompt. "
+                        "Only recommend, compare, or discuss crops that appear in the Supported Crops list. "
+                        "Never invent crop names or claim support for crops that are not in the Supported Crops list. "
+                        "If a crop is not supported, clearly explain that it is unavailable in the application. "
+                        "When answering questions about agriculture, regions, states, countries, farming practices, or crop uses, provide helpful agricultural information and relate it back to supported crops whenever possible. "
+                        "If information is available within the application, explain it directly in plain language rather than telling users to inspect files or source code. "
                         "Do not tell users to check files, notebooks, code, source code, repository contents, or project documents. "
-                        "Always answer as a guide to using the application rather than as a developer describing source code, files, or repository contents. "
                         "When explaining regression model results, avoid describing models as 'bad,' 'poor,' or 'ineffective' based solely on RMSE or R² values. "
                         "This project analyzes fertilizer application as a single explanatory variable. Crop yield is also influenced by rainfall, soil conditions, temperature, irrigation, pests, genetics, and management practices. "
                         "Models 1 and 2 are included primarily to visualize fertilizer-yield relationships and support the fertilizer optimization recommendation generated in Model 3. "
@@ -520,6 +451,77 @@ if new_project:
     st.cache_data.clear()
 
     st.rerun()
+
+# -----------------------------
+# Load data
+# -----------------------------
+@st.cache_data
+def load_fertilizer_data():
+    path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
+    return pd.read_csv(
+        os.path.join(
+            path,
+            "Environment_Fertilizers_E_All_Data_(Normalized)",
+            "Environment_Fertilizers_E_All_Data_(Normalized).csv"
+        ),
+        encoding="latin1"
+    )
+
+@st.cache_data
+def load_crop_yield_data():
+    crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
+    return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
+
+fert = load_fertilizer_data()
+df_yield = load_crop_yield_data()
+
+exclude_crops = [
+    "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in df_yield["Item"].unique()
+    if crop not in exclude_crops
+)
+crop_context = f"""
+SUPPORTED CROP COUNT:
+{len(available_crops)}
+
+SUPPORTED CROPS:
+{", ".join(available_crops)}
+
+RULES:
+- Only recommend crops from this list.
+- Never invent crop names.
+- If a crop is unavailable, clearly say it is not supported.
+- If asked what crops are available, provide the crop names.
+"""
 
 # -----------------------------
 # Prepare fertilizer data
