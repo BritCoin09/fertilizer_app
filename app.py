@@ -475,54 +475,6 @@ def load_crop_yield_data():
 fert = load_fertilizer_data()
 df_yield = load_crop_yield_data()
 
-exclude_crops = [
-    "Eggs Primary",
-    "Other pome fruits",
-    "Jojoba seeds",
-    "Tallowtree seeds",
-    "Eggs from other birds in shell, fresh, n.e.c.",
-    "Hen eggs in shell, fresh",
-    "Milk, Total",
-    "Raw milk of buffalo",
-    "Raw milk of camel",
-    "Raw milk of cattle",
-    "Raw milk of goats",
-    "Raw milk of sheep",
-    "Raw hides and skins of buffaloes",
-    "Raw hides and skins of cattle",
-    "Raw hides and skins of goats or kids",
-    "Raw hides and skins of sheep or lambs",
-    "Cereals, primary",
-    "Citrus Fruit, Total",
-    "Fruit Primary",
-    "Pulses, Total",
-    "Roots and Tubers, Total",
-    "Sugar Crops Primary",
-    "Treenuts, Total",
-    "Vegetables Primary",
-    "Oilcrops, Cake Equivalent",
-    "Oilcrops, Oil Equivalent",
-    "Fibre Crops, Fibre Equivalent"
-]
-
-available_crops = sorted(
-    crop for crop in crop_yield_only["Item"].unique()
-    if crop not in exclude_crops
-)
-crop_context = f"""
-SUPPORTED CROP COUNT:
-{len(available_crops)}
-
-SUPPORTED CROPS:
-{", ".join(available_crops)}
-
-RULES:
-- Only recommend crops from this list.
-- Never invent crop names.
-- If a crop is unavailable, clearly say it is not supported.
-- If asked what crops are available, provide the crop names.
-"""
-
 # -----------------------------
 # Prepare fertilizer data
 # -----------------------------
@@ -583,6 +535,53 @@ crop_yield_only = df_long[df_long["Element"] == "Yield"]
 
 global_yield = crop_yield_only.groupby(["Year", "Item"])["Value"].sum().reset_index()
 
+exclude_crops = [
+    "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in crop_yield_only["Item"].unique()
+    if crop not in exclude_crops
+)
+crop_context = f"""
+SUPPORTED CROP COUNT:
+{len(available_crops)}
+
+SUPPORTED CROPS:
+{", ".join(available_crops)}
+
+RULES:
+- Only recommend crops from this list.
+- Never invent crop names.
+- If a crop is unavailable, clearly say it is not supported.
+- If asked what crops are available, provide the crop names.
+"""
 # -----------------------------
 # Build crop datasets
 # -----------------------------
