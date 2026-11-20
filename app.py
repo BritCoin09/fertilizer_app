@@ -402,6 +402,7 @@ if _client and chat_query:
                         "Users do not have access to the repository, source code, project files, notebooks, or local files. "
                         "Never tell users to search files, inspect code, open notebooks, view source code, browse the repository, or look through project files. "
                         "If information exists in the repository context, explain it directly to the user in plain language. "
+                        "Use crop names exactly as they appear in the Supported Crops list."
                         "Use the Supported Crops list provided in this prompt as the authoritative list of supported crops. "
                         "If a user asks how many crops are supported, what crops are available, or whether a specific crop is supported, answer directly using the Supported Crop Count and Supported Crops list provided in this prompt. "
                         "Only recommend, compare, or discuss crops that appear in the Supported Crops list. "
