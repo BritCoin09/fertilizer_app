@@ -2062,7 +2062,6 @@ Discuss how the polynomial model compares with the linear regression model. Expl
 st.subheader(
     f"{crop1_emoji} {crop} Model 3: Optimal Fertilizer Level"
 )
-st.subheader(f"{crop} Model 3: Optimal Fertilizer Level")
 
 optimal_intro = st.text_area(
     "Model 3 Introduction",
@@ -2085,34 +2084,41 @@ x_range = np.linspace(
 a = model2.coef_[1]
 b = model2.coef_[0]
 
+warning_shown = False
+
 if abs(a) < 1e-10:
     x_opt = None
     y_opt = None
+    warning_shown = True
 
     st.warning(
         f"⚠️ No clear fertilizer optimum could be determined for {crop}."
     )
+
 else:
     x_opt = -b / (2 * a)
+
     fert_min = df_crop_main["Value_fert"].min()
     fert_max = df_crop_main["Value_fert"].max()
 
     if x_opt < fert_min or x_opt > fert_max:
         x_opt = None
         y_opt = None
-    
+        warning_shown = True
+
         st.warning(
             f"⚠️ No realistic fertilizer optimum was found for {crop} within the observed fertilizer range."
         )
+
     else:
         x_opt_df = pd.DataFrame(
             {"Value_fert": [x_opt]}
         )
-    
+
         x_opt_poly = poly.transform(
             x_opt_df
         )
-    
+
         y_opt = model2.predict(
             x_opt_poly
         )[0]
@@ -2140,11 +2146,8 @@ if x_opt is not None and y_opt is not None:
             "Predicted Yield at Optimum",
             f"{y_opt:.2f}"
         )
-else:
 
-    st.warning(
-        f"⚠️ No clear fertilizer optimum could be determined for {crop}."
-    )
+
 x_range_df = pd.DataFrame(
     {"Value_fert": x_range}
 )
