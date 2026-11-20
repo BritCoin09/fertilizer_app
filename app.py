@@ -259,7 +259,7 @@ if _client and chat_query:
                         "Models 1 and 2 are included primarily to visualize fertilizer-yield relationships and support the fertilizer optimization recommendation generated in Model 3. "
                         "If model performance metrics are weak, explain that fertilizer alone may not capture the full complexity of crop production and that additional agricultural variables are often needed to improve predictive performance. "
                         "Interpret results as insights into fertilizer response rather than as complete crop-yield prediction systems. "
-                        f"\n\nSupported Crops:\n{', '.join(available_crops)}"
+                        f"\n\nSupported Crops:\n{', '.join(supported_crops)}"
                         f"\n\nRepository Context:\n{context}"
                     ),
                 },
@@ -517,8 +517,6 @@ RULES:
 - If a crop is unavailable, clearly say it is not supported.
 - If asked what crops are available, provide the crop names.
 """
-st.write(f"Number of crops: {len(available_crops)}")
-st.write(available_crops[:10])
 
 # -----------------------------
 # Prepare fertilizer data
@@ -695,7 +693,6 @@ def get_supported_crops():
     return sorted(supported)
     
 supported_crops = get_supported_crops()
-st.write(f"Supported crops: {len(supported_crops)}")
 
 if "analysis_ran" not in st.session_state:
     st.session_state.analysis_ran = False
