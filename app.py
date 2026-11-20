@@ -622,7 +622,10 @@ def build_crop_df(crop_name: str):
         subset=["Value_yield", "Value_fert"]
     )
     
-    if df_crop["Year"].nunique() < 50:
+    if (
+        df_crop["Year"].nunique() < 50
+        and st.session_state.get("analysis_ran", False)
+    ):
         st.warning(
             f"⚠️ {crop_name} has limited historical data ({df_crop['Year'].nunique()} years). Results may be less reliable."
         )
