@@ -657,7 +657,7 @@ st.subheader(
 )
 
 available_crops = sorted(
-    crop for crop in crop_yield_only["Item"].unique()
+    crop for crop in df_yield["Item"].unique()
     if crop not in exclude_crops
 )
 
