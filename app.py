@@ -184,7 +184,73 @@ if _client and RAG_DOCS:
 
         faiss_index = None
         faiss_texts = None
+# -----------------------------
+# Load data
+# -----------------------------
+@st.cache_data
+def load_fertilizer_data():
+    path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
+    return pd.read_csv(
+        os.path.join(
+            path,
+            "Environment_Fertilizers_E_All_Data_(Normalized)",
+            "Environment_Fertilizers_E_All_Data_(Normalized).csv"
+        ),
+        encoding="latin1"
+    )
 
+@st.cache_data
+def load_crop_yield_data():
+    crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
+    return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
+
+fert = load_fertilizer_data()
+df_yield = load_crop_yield_data()
+
+exclude_crops = [
+    "Eggs Primary",
+    "Other pome fruits",
+    "Jojoba seeds",
+    "Tallowtree seeds",
+    "Eggs from other birds in shell, fresh, n.e.c.",
+    "Hen eggs in shell, fresh",
+    "Milk, Total",
+    "Raw milk of buffalo",
+    "Raw milk of camel",
+    "Raw milk of cattle",
+    "Raw milk of goats",
+    "Raw milk of sheep",
+    "Raw hides and skins of buffaloes",
+    "Raw hides and skins of cattle",
+    "Raw hides and skins of goats or kids",
+    "Raw hides and skins of sheep or lambs",
+    "Cereals, primary",
+    "Citrus Fruit, Total",
+    "Fruit Primary",
+    "Pulses, Total",
+    "Roots and Tubers, Total",
+    "Sugar Crops Primary",
+    "Treenuts, Total",
+    "Vegetables Primary",
+    "Oilcrops, Cake Equivalent",
+    "Oilcrops, Oil Equivalent",
+    "Fibre Crops, Fibre Equivalent"
+]
+
+available_crops = sorted(
+    crop for crop in df_yield["Item"].unique()
+    if crop not in exclude_crops
+)
+crop_context = f"""
+SUPPORTED CROPS:
+{", ".join(available_crops)}
+
+RULES:
+- Only recommend crops from this list.
+- Never invent crop names.
+- If a crop is unavailable, clearly say it is not supported.
+- If asked what crops are available, provide the crop names.
+"""
 # -----------------------------
 # Chatbot (RAG)
 # -----------------------------
@@ -259,7 +325,7 @@ if _client and chat_query:
                         "Models 1 and 2 are included primarily to visualize fertilizer-yield relationships and support the fertilizer optimization recommendation generated in Model 3. "
                         "If model performance metrics are weak, explain that fertilizer alone may not capture the full complexity of crop production and that additional agricultural variables are often needed to improve predictive performance. "
                         "Interpret results as insights into fertilizer response rather than as complete crop-yield prediction systems. "
-                        f"\n\nSupported Crops:\n{', '.join(supported_crops)}"
+                        f"\n\n{crop_context}"
                         f"\n\nRepository Context:\n{context}"
                     ),
                 },
@@ -451,74 +517,6 @@ if new_project:
     st.rerun()
 
 # -----------------------------
-# Load data
-# -----------------------------
-@st.cache_data
-def load_fertilizer_data():
-    path = kagglehub.dataset_download("raaad3000/faostat-fertilizers-indicators")
-    return pd.read_csv(
-        os.path.join(
-            path,
-            "Environment_Fertilizers_E_All_Data_(Normalized)",
-            "Environment_Fertilizers_E_All_Data_(Normalized).csv"
-        ),
-        encoding="latin1"
-    )
-
-@st.cache_data
-def load_crop_yield_data():
-    crop_yield = kagglehub.dataset_download("vijayveersingh/faostat-crops-and-livestock-data")
-    return pd.read_csv(crop_yield + "/Production_Crops_Livestock_E_All_Data_NOFLAG.csv")
-
-fert = load_fertilizer_data()
-df_yield = load_crop_yield_data()
-
-exclude_crops = [
-    "Eggs Primary",
-    "Other pome fruits",
-    "Jojoba seeds",
-    "Tallowtree seeds",
-    "Eggs from other birds in shell, fresh, n.e.c.",
-    "Hen eggs in shell, fresh",
-    "Milk, Total",
-    "Raw milk of buffalo",
-    "Raw milk of camel",
-    "Raw milk of cattle",
-    "Raw milk of goats",
-    "Raw milk of sheep",
-    "Raw hides and skins of buffaloes",
-    "Raw hides and skins of cattle",
-    "Raw hides and skins of goats or kids",
-    "Raw hides and skins of sheep or lambs",
-    "Cereals, primary",
-    "Citrus Fruit, Total",
-    "Fruit Primary",
-    "Pulses, Total",
-    "Roots and Tubers, Total",
-    "Sugar Crops Primary",
-    "Treenuts, Total",
-    "Vegetables Primary",
-    "Oilcrops, Cake Equivalent",
-    "Oilcrops, Oil Equivalent",
-    "Fibre Crops, Fibre Equivalent"
-]
-
-available_crops = sorted(
-    crop for crop in df_yield["Item"].unique()
-    if crop not in exclude_crops
-)
-crop_context = f"""
-SUPPORTED CROPS:
-{", ".join(available_crops)}
-
-RULES:
-- Only recommend crops from this list.
-- Never invent crop names.
-- If a crop is unavailable, clearly say it is not supported.
-- If asked what crops are available, provide the crop names.
-"""
-
-# -----------------------------
 # Prepare fertilizer data
 # -----------------------------
 fert_crop = fert[fert["Element"] == "Use per area of cropland"]
@@ -669,10 +667,6 @@ st.subheader(
     f"{crop1_emoji} Select Crop(s) for Analysis {crop2_emoji}"
 )
 
-available_crops = sorted(
-    crop for crop in df_yield["Item"].unique()
-    if crop not in exclude_crops
-)
 @st.cache_data
 def get_supported_crops():
     supported = []
