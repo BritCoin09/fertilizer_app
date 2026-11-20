@@ -3018,11 +3018,6 @@ if crop2 and df_crop_second is not None:
                 f"{y_opt2:.2f}"
             )
     
-    else:
-        st.warning(
-            f"⚠️ No clear fertilizer optimum could be determined for {crop2}."
-        )
-    
     x_range_df2 = pd.DataFrame(
         {"Value_fert": x_range2}
     )
