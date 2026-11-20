@@ -242,6 +242,9 @@ available_crops = sorted(
     if crop not in exclude_crops
 )
 crop_context = f"""
+SUPPORTED CROP COUNT:
+{len(available_crops)}
+
 SUPPORTED CROPS:
 {", ".join(available_crops)}
 
@@ -315,7 +318,9 @@ if _client and chat_query:
                         "Never tell users to search files, inspect code, open notebooks, view source code, browse the repository, or look through project files. "
                         "If information exists in the repository context, explain it directly to the user in plain language. "
                         "If a user asks where to find something, direct them to locations within the application itself, such as the sidebar crop selectors, charts, modeling sections, comparison section, conclusions section, or project explanations. "
-                        "If users ask what crops are available, direct them to the 'Choose Your Crop' section and explain how to explore crop options within the application. Do not provide lists of crop names unless the user specifically requests examples. "
+                        "If users ask what crops are available, provide the crop names from the Supported Crops section included in this prompt. "
+                        "Only recommend, compare, or discuss crops that appear in the Supported Crops section. "
+                        "Never invent crop names that are not listed in the Supported Crops section. "
                         "Encourage users to use the crop selection workflow and experiment with different crop names in the sidebar crop selectors. "
                         "If information is available in a chart, section, table, text area, or visualization within the application, direct users there instead of referring to repository contents. "
                         "Do not tell users to check files, notebooks, code, source code, repository contents, or project documents. "
