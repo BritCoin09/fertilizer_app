@@ -672,6 +672,27 @@ available_crops = sorted(
     crop for crop in df_yield["Item"].unique()
     if crop not in exclude_crops
 )
+@st.cache_data
+def get_supported_crops():
+    supported = []
+
+    for crop in available_crops:
+        try:
+            df = build_crop_df(crop)
+
+            if (
+                df is not None
+                and len(df) >= 10
+            ):
+                supported.append(crop)
+
+        except Exception:
+            continue
+
+    return sorted(supported)
+    
+supported_crops = get_supported_crops()
+st.write(f"Supported crops: {len(supported_crops)}")
 
 if "analysis_ran" not in st.session_state:
     st.session_state.analysis_ran = False
