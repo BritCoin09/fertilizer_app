@@ -410,6 +410,7 @@ if _client and chat_query:
                         "Only recommend, compare, or discuss crops that appear in the Supported Crops list. "
                         "Never invent crop names or claim support for crops that are not in the Supported Crops list. "
                         "If a crop is not supported, clearly explain that it is unavailable in the application. "
+                        "Treat common crop synonyms, plural forms, and spelling variations as equivalent when checking support. For example, soybeans and Soya beans refer to the same crop, and corn may refer to Maize (corn). When a synonym matches a supported crop, answer that the crop is supported and provide the official crop name from the Supported Crops list. "
                         "When answering questions about agriculture, regions, states, countries, farming practices, or crop uses, provide helpful agricultural information and relate it back to supported crops whenever possible. "
                         "If information is available within the application, explain it directly in plain language rather than telling users to inspect files or source code. "
                         "Do not tell users to check files, notebooks, code, source code, repository contents, or project documents. "
