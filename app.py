@@ -2973,18 +2973,29 @@ if crop2 and df_crop_second is not None:
         )
     else:
         x_opt2 = -b2 / (2 * a2)
-    
-        x_opt_df2 = pd.DataFrame(
-            {"Value_fert": [x_opt2]}
-        )
-    
-        x_opt_poly2 = poly2.transform(
-            x_opt_df2
-        )
-    
-        y_opt2 = model2_2.predict(
-            x_opt_poly2
-        )[0]
+
+        fert_min2 = df_crop_second["Value_fert"].min()
+        fert_max2 = df_crop_second["Value_fert"].max()
+        
+        if x_opt2 < fert_min2 or x_opt2 > fert_max2:
+            x_opt2 = None
+            y_opt2 = None
+        
+            st.warning(
+                f"⚠️ No realistic fertilizer optimum was found for {crop2} within the observed fertilizer range."
+            )
+        else:
+            x_opt_df2 = pd.DataFrame(
+                {"Value_fert": [x_opt2]}
+            )
+        
+            x_opt_poly2 = poly2.transform(
+                x_opt_df2
+            )
+        
+            y_opt2 = model2_2.predict(
+                x_opt_poly2
+            )[0]
     
     st.write("### Model Results")
 
@@ -3188,6 +3199,7 @@ if crop2 and df_crop_second is not None:
         if x_opt < fert_min1 or x_opt > fert_max1:
             x_opt = None
             y_opt = None
+            st.warning(f"⚠️ {crop} did not produce a realistic optimum within the observed fertilizer range.")
     
         else:
             x_opt_df = pd.DataFrame(
@@ -3230,6 +3242,10 @@ if crop2 and df_crop_second is not None:
         if x_opt_2 < fert_min2 or x_opt_2 > fert_max2:
             x_opt_2 = None
             y_opt_2 = None
+    
+            st.warning(
+                f"⚠️ {crop2} did not produce a realistic optimum within the observed fertilizer range."
+            )
     
         else:
             x_opt_df_2 = pd.DataFrame(
