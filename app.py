@@ -507,7 +507,16 @@ available_crops = sorted(
     crop for crop in df_yield["Item"].unique()
     if crop not in exclude_crops
 )
+crop_context = f"""
+SUPPORTED CROPS:
+{", ".join(available_crops)}
 
+RULES:
+- Only recommend crops from this list.
+- Never invent crop names.
+- If a crop is unavailable, clearly say it is not supported.
+- If asked what crops are available, provide the crop names.
+"""
 # -----------------------------
 # Prepare fertilizer data
 # -----------------------------
