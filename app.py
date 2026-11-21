@@ -262,6 +262,9 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
 # -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
 # -------------------------------------------
+st.caption(
+    "🔒 Your API key is used only for AI-generated recommendations during this session and is not stored."
+)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
@@ -784,35 +787,6 @@ crop2 = st.session_state.get("crop2", None)
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-with st.expander("Why do I need an OpenAI API key?"):
-    st.write("""
-    This application uses OpenAI to generate fertilizer recommendations and sustainability insights.
-
-    To avoid charging users directly, the app uses your own OpenAI API key for AI-generated analysis.
-
-    The key is only used during your session and is not stored.
-    """)
-    
-with st.expander("🔒 Privacy & Project Information"):
-    st.markdown("""
-**What is this?**
-
-A data science portfolio project that combines agricultural data,
-machine learning, and AI-generated insights to explore sustainable
-fertilizer optimization.
-
-**Who is it for?**
-
-- Farmers
-- Researchers
-- Sustainability professionals
-- Students
-- Recruiters reviewing data science work
-
-**API Key Security**
-
-Your OpenAI API key is used only during your current session and is not stored by the application.
-""")
     
 st.title(
     f"{crop1_emoji} Sustainable Fertilizer Optimization {crop2_emoji}"
