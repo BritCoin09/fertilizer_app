@@ -262,14 +262,6 @@ def chunk_text(text: str, max_chars: int = 1000) -> list[str]:
 # -------------------------------------------
 # Sidebar: crop selection + API key + chatbot
 # -------------------------------------------
-with st.expander("Why do I need an OpenAI API key?"):
-    st.write("""
-    This application uses OpenAI to generate fertilizer recommendations and sustainability insights.
-
-    To avoid charging users directly, the app uses your own OpenAI API key for AI-generated analysis.
-
-    The key is only used during your session and is not stored.
-    """)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔑 OpenAI API Key")
@@ -792,16 +784,15 @@ crop2 = st.session_state.get("crop2", None)
 # -----------------------------
 # NOTEBOOK STARTS HERE
 # -----------------------------
-st.title(
-    f"{crop1_emoji} Sustainable Fertilizer Optimization {crop2_emoji}"
-)
+with st.expander("Why do I need an OpenAI API key?"):
+    st.write("""
+    This application uses OpenAI to generate fertilizer recommendations and sustainability insights.
 
-st.markdown("""
-Explore how fertilizer use influences crop yield using historical agricultural data, machine learning, and AI-powered insights.
+    To avoid charging users directly, the app uses your own OpenAI API key for AI-generated analysis.
 
-This portfolio project helps visualize crop responses to fertilizer and supports sustainable decision-making.
-""")
-
+    The key is only used during your session and is not stored.
+    """)
+    
 with st.expander("🔒 Privacy & Project Information"):
     st.markdown("""
 **What is this?**
@@ -821,6 +812,16 @@ fertilizer optimization.
 **API Key Security**
 
 Your OpenAI API key is used only during your current session and is not stored by the application.
+""")
+    
+st.title(
+    f"{crop1_emoji} Sustainable Fertilizer Optimization {crop2_emoji}"
+)
+
+st.markdown("""
+Explore how fertilizer use influences crop yield using historical agricultural data, machine learning, and AI-powered insights.
+
+This portfolio project helps visualize crop responses to fertilizer and supports sustainable decision-making.
 """)
 
 st.info("""
