@@ -797,83 +797,42 @@ st.title(
 )
 
 st.markdown("""
-## 🌱 What is this?
+Explore how fertilizer use influences crop yield using historical agricultural data, machine learning, and AI-powered insights.
 
-This is a data science portfolio project that combines agricultural data,
-machine learning, and AI-powered recommendations to explore sustainable
+This portfolio project helps visualize crop responses to fertilizer and supports sustainable decision-making.
+""")
+
+with st.expander("🔒 Privacy & Project Information"):
+    st.markdown("""
+**What is this?**
+
+A data science portfolio project that combines agricultural data,
+machine learning, and AI-generated insights to explore sustainable
 fertilizer optimization.
-""")
 
-st.markdown("""
-## 📖 What does this tool do?
+**Who is it for?**
 
-This application helps explore how fertilizer use influences crop yields
-while balancing sustainability goals.
-
-Using historical agricultural data, the tool can:
-
-✅ Analyze crop responses to fertilizer
-
-✅ Compare nutrient application strategies
-
-✅ Visualize yield trends
-
-✅ Generate AI-powered recommendations
-
-✅ Support sustainable farming decisions
-
-This project was developed as a data science portfolio project combining
-machine learning, data visualization, and agricultural analytics.
-""")
-
-st.markdown("""
-## 🎯 Who is this for?
-
-- Farmers exploring fertilizer strategies
-- Agricultural researchers
+- Farmers
+- Researchers
 - Sustainability professionals
-- Students learning about agronomy
-- Recruiters and hiring managers reviewing a data science portfolio project
+- Students
+- Recruiters reviewing data science work
+
+**API Key Security**
+
+Your OpenAI API key is used only during your current session and is not stored by the application.
 """)
-
-st.info("""
-🔒 Privacy & Security Notice
-
-Your OpenAI API key is used only during your current session to generate
-AI-powered recommendations.
-
-• The key is not stored in a database
-
-• The key is not shared with third parties
-
-• The key is sent only to OpenAI when you request AI analysis
-
-• When your session ends, the key is discarded
-""")
-
-with st.expander("Why do I need an OpenAI API key?"):
-    st.write("""
-    This application uses OpenAI to generate fertilizer recommendations
-    and sustainability insights.
-
-    To avoid charging users directly, the application uses your own
-    OpenAI API key for AI-generated analysis.
-
-    The key is only used during your session and is not stored.
-    """)
 
 st.info("""
 🌾 Understanding Your Results
 
-This tool explores how fertilizer use relates to crop yield using historical agricultural data.
+Crop yield is influenced by many factors, including fertilizer use,
+rainfall, temperature, soil conditions, irrigation, and management practices.
 
-The charts and analyses below are designed to help identify patterns, trends, and potential relationships between nutrient application and crop performance.
-
-Crop yield is influenced by many factors, including fertilizer use, rainfall, temperature, soil conditions, irrigation, and management practices.
-
-Some crops may show strong relationships between fertilizer and yield, while others may show weak or even negative relationships. These outcomes do not necessarily indicate an error. Instead, they suggest that fertilizer alone may not fully explain yield variation for the selected crop.
-
-Results should be viewed as exploratory insights and educational analysis rather than direct farming recommendations.
+Some crops may show strong relationships between fertilizer and yield,
+while others may show weak or negative relationships. These outcomes do
+not necessarily indicate an error and may indicate that fertilizer alone
+does not explain yield variation.
 """)
 
 st.subheader("Choose Your Crop(s)")
