@@ -323,24 +323,6 @@ def build_faiss_index(docs: list[str], _client: OpenAI):
 
     return index, texts
 
-faiss_index = None
-faiss_texts = None
-
-
-if _client and RAG_DOCS:
-    try:
-        faiss_index, faiss_texts = build_faiss_index(
-            RAG_DOCS,
-            _client
-        )
-
-    except Exception as e:
-        st.sidebar.warning(
-            f"Chatbot unavailable: {e}"
-        )
-
-        faiss_index = None
-        faiss_texts = None
 
 # -----------------------------
 # Chatbot (RAG)
